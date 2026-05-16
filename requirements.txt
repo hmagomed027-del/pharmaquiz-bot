@@ -1,0 +1,8 @@
+aiogram>=3.13
+aiosqlite>=0.20
+google-genai>=1.10
+python-dotenv>=1.0
+fastapi>=0.115
+uvicorn>=0.34
+python-multipart>=0.0.20
+aiohttp>=3.11
