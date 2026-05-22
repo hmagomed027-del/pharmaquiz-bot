@@ -61,6 +61,12 @@ async def start_exam(body: ExamStartRequest, user_id: int = Depends(get_user_id)
     return {"session_id": session_id, "questions": questions}
 
 
+def _answers_match(chosen: Optional[str], correct: str) -> bool:
+    if not chosen:
+        return False
+    return set(chosen.split(",")) == set(correct.split(","))
+
+
 @router.post("/exam/finish")
 async def finish_exam(body: ExamFinishRequest, user_id: int = Depends(get_user_id)):
     db = await get_db()
@@ -78,7 +84,7 @@ async def finish_exam(body: ExamFinishRequest, user_id: int = Depends(get_user_i
         if not q_row:
             continue
 
-        is_correct = not ans.is_skipped and ans.chosen_answer == q_row["correct_answer"]
+        is_correct = not ans.is_skipped and _answers_match(ans.chosen_answer, q_row["correct_answer"])
         if is_correct:
             correct_count += 1
 

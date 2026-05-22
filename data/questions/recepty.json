@@ -583,5 +583,741 @@
     "correct_answer": "B",
     "difficulty": 1,
     "tags": ["Cito", "Statim", "срочно", "рецептурные обозначения"]
+  },
+  {
+    "id": "rec_051",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Какой латинский термин обозначает «мельчайший» порошок?",
+    "drug_name": null,
+    "options": {"A": "Pulvis grossus", "B": "Pulvis subtilis", "C": "Pulvis subtilissimus", "D": "Pulvis divisus"},
+    "correct_answer": "C",
+    "difficulty": 1,
+    "tags": ["порошки", "subtilissimus", "степень измельчения", "латынь"]
+  },
+  {
+    "id": "rec_052",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Минимальная масса одного разделённого порошка (Pulvis divisus) составляет:",
+    "drug_name": null,
+    "options": {"A": "0,05 г", "B": "0,1 г", "C": "0,2 г", "D": "0,5 г"},
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["порошки", "Pulvis divisus", "минимальная масса", "разделённый порошок"]
+  },
+  {
+    "id": "rec_053",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Если доза лекарственного вещества в разделённом порошке составляет 0,05 г, что следует добавить?",
+    "drug_name": null,
+    "options": {"A": "Ничего — оставить как есть", "B": "Наполнитель (чаще всего Saccharum) до минимальной массы 0,2–0,3 г", "C": "Воду до 1 мл", "D": "Вазелин"},
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["порошки", "наполнитель", "малая доза", "Saccharum"]
+  },
+  {
+    "id": "rec_054",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Какие вещества применяют в качестве наполнителей (Constituens) в разделённых порошках при малых дозах? (Выберите все верные)",
+    "drug_name": null,
+    "options": {"A": "Saccharum (сахар)", "B": "Natrii hydrocarbonas (натрия гидрокарбонат)", "C": "Vaselinum (вазелин)", "D": "Lanolinum (ланолин)"},
+    "correct_answer": "A,B",
+    "correct_answers": ["A", "B"],
+    "difficulty": 2,
+    "tags": ["порошки", "наполнитель", "Saccharum", "Natrii hydrocarbonas", "multi-answer"]
+  },
+  {
+    "id": "rec_055",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Как правильно прописать в рецепте порошок из листьев дигиталиса (Digitalis purpurea) по 0,05 г?",
+    "drug_name": null,
+    "options": {
+      "A": "Rp.: Pulveris Digitalis 0,05 / D.t.d. N 10 / S.",
+      "B": "Rp.: Pulveris foliorum Digitalis 0,05 / D.t.d. N 10 / S.",
+      "C": "Rp.: Infusi foliorum Digitalis 0,05 / D.t.d. N 10 / S.",
+      "D": "Rp.: Tincturae Digitalis 0,05 / D.t.d. N 10 / S."
+    },
+    "correct_answer": "B",
+    "difficulty": 3,
+    "tags": ["порошки", "растительные порошки", "Digitalis", "foliorum", "рецепт"]
+  },
+  {
+    "id": "rec_056",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Максимальная масса одного разделённого порошка составляет:",
+    "drug_name": null,
+    "options": {"A": "0,5 г", "B": "0,8 г", "C": "1,0 г", "D": "2,0 г"},
+    "correct_answer": "C",
+    "difficulty": 2,
+    "tags": ["порошки", "максимальная масса", "разделённый порошок"]
+  },
+  {
+    "id": "rec_057",
+    "topic": "Рецептура",
+    "subtopic": "Порошки",
+    "question": "Как прописывают неразделённый порошок натрия бромида общей массой 50 г?",
+    "drug_name": null,
+    "options": {
+      "A": "Rp.: Pulveris Natrii bromidi 50,0 / D.S.",
+      "B": "Rp.: Pulveris Natrii bromidi 0,5 / D.t.d. N 100 / S.",
+      "C": "Rp.: Solutionis Natrii bromidi 50,0 / D.S.",
+      "D": "Rp.: Natrii bromidi 50,0 in capsulis / D.S."
+    },
+    "correct_answer": "A",
+    "difficulty": 2,
+    "tags": ["порошки", "неразделённый порошок", "Pulvis indivisus", "натрия бромид"]
+  },
+  {
+    "id": "rec_058",
+    "topic": "Рецептура",
+    "subtopic": "Таблетки",
+    "question": "Какие из следующих форм прописи таблеток фенобарбитала 0,05 г № 10 являются правильными? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Tab. Phenobarbitali 0,05 N 10",
+      "B": "D.t.d. N 10 in tabulettis (Phenobarbitali 0,05)",
+      "C": "Tabulettas Phenobarbitali 0,05 N 10",
+      "D": "Pilulae Phenobarbitali 0,05 N 10"
+    },
+    "correct_answer": "A,B,C",
+    "correct_answers": ["A", "B", "C"],
+    "difficulty": 3,
+    "tags": ["таблетки", "три формы прописи", "фенобарбитал", "tabulettae", "multi-answer"]
+  },
+  {
+    "id": "rec_059",
+    "topic": "Рецептура",
+    "subtopic": "Таблетки",
+    "question": "Как правильно указать торговое (патентованное) название таблетки в рецепте?",
+    "drug_name": null,
+    "options": {
+      "A": "Tab. Corvalolum N 20",
+      "B": "Tab. \"Corvaloli\" N 20",
+      "C": "Tab. Corvaloli N 20",
+      "D": "Tab. Corvalolum® N 20"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["таблетки", "торговое название", "кавычки", "Corvalol"]
+  },
+  {
+    "id": "rec_060",
+    "topic": "Рецептура",
+    "subtopic": "Капсулы",
+    "question": "Какие виды капсул указывают в рецептурных прописях? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "in capsulis gelatinosis (желатиновые)",
+      "B": "in capsulis amylaceis (крахмальные)",
+      "C": "in capsulis ligneis (деревянные)",
+      "D": "in capsulis vitriolis (стеклянные)"
+    },
+    "correct_answer": "A,B",
+    "correct_answers": ["A", "B"],
+    "difficulty": 2,
+    "tags": ["капсулы", "gelatinosis", "amylaceis", "виды капсул", "multi-answer"]
+  },
+  {
+    "id": "rec_061",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "По какой формуле рассчитывают массу лекарственного вещества для приготовления мази?",
+    "drug_name": null,
+    "options": {
+      "A": "m = V / C × 100",
+      "B": "m = V × C / 100",
+      "C": "m = C / V × 100",
+      "D": "m = C × 100 / V"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["мази", "расчёт", "формула", "концентрация", "масса"]
+  },
+  {
+    "id": "rec_062",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Сколько граммов тетрациклина нужно для приготовления 50 г 2% тетрациклиновой мази?",
+    "drug_name": "Тетрациклин",
+    "options": {"A": "0,5 г", "B": "1,0 г", "C": "2,0 г", "D": "4,0 г"},
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["мази", "расчёт", "тетрациклин", "2%", "формула m=V×C/100"]
+  },
+  {
+    "id": "rec_063",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Что означает обозначение «aa» в прописи мази: «Lanolini et Vaselini aa 24,5»?",
+    "drug_name": null,
+    "options": {
+      "A": "Анонимно (без названия)",
+      "B": "Каждого поровну",
+      "C": "Правый и левый",
+      "D": "Суммарно"
+    },
+    "correct_answer": "B",
+    "difficulty": 1,
+    "tags": ["мази", "aa", "ana partes aequales", "смешанная основа"]
+  },
+  {
+    "id": "rec_064",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Какие вещества используют в качестве основы (Constituens) для мазей? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Vaselinum (вазелин)",
+      "B": "Lanolinum (ланолин)",
+      "C": "Talcum (тальк)",
+      "D": "Amylum (крахмал)"
+    },
+    "correct_answer": "A,B",
+    "correct_answers": ["A", "B"],
+    "difficulty": 2,
+    "tags": ["мази", "основа", "Vaselinum", "Lanolinum", "multi-answer"]
+  },
+  {
+    "id": "rec_065",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "В каких пределах должна находиться суммарная концентрация порошкообразных веществ в пасте?",
+    "drug_name": null,
+    "options": {"A": "5–20%", "B": "25–65%", "C": "10–40%", "D": "50–90%"},
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["паста", "концентрация", "порошки", "25-65%"]
+  },
+  {
+    "id": "rec_066",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Суммарная концентрация порошков в пасте составила 15%. Что необходимо сделать?",
+    "drug_name": null,
+    "options": {
+      "A": "Уменьшить количество основы",
+      "B": "Добавить наполнитель (тальк, крахмал или Zinci oxydum) до достижения 25%",
+      "C": "Добавить воду",
+      "D": "Прописать как мазь (Unguentum)"
+    },
+    "correct_answer": "B",
+    "difficulty": 3,
+    "tags": ["паста", "наполнитель", "концентрация", "<25%"]
+  },
+  {
+    "id": "rec_067",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Какие вещества добавляют в пасту как наполнители при недостаточной концентрации порошков (<25%)? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Talcum (тальк)",
+      "B": "Amylum (крахмал)",
+      "C": "Zinci oxydum (цинка оксид)",
+      "D": "Lanolinum (ланолин)"
+    },
+    "correct_answer": "A,B,C",
+    "correct_answers": ["A", "B", "C"],
+    "difficulty": 2,
+    "tags": ["паста", "наполнитель", "тальк", "крахмал", "цинка оксид", "multi-answer"]
+  },
+  {
+    "id": "rec_068",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Стандартная масса ректального суппозитория составляет:",
+    "drug_name": null,
+    "options": {"A": "1 г", "B": "2 г", "C": "3 г", "D": "5 г"},
+    "correct_answer": "C",
+    "difficulty": 1,
+    "tags": ["суппозитории", "ректальные", "масса", "3 г"]
+  },
+  {
+    "id": "rec_069",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Стандартная масса вагинального суппозитория составляет:",
+    "drug_name": null,
+    "options": {"A": "2 г", "B": "3 г", "C": "4 г", "D": "6 г"},
+    "correct_answer": "C",
+    "difficulty": 2,
+    "tags": ["суппозитории", "вагинальные", "масса", "4 г"]
+  },
+  {
+    "id": "rec_070",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Какие вещества используют в качестве основы для суппозиториев? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Oleum Cacao (масло какао)",
+      "B": "Witepsol",
+      "C": "Vaselinum (вазелин)",
+      "D": "Lanolinum (ланолин)"
+    },
+    "correct_answer": "A,B",
+    "correct_answers": ["A", "B"],
+    "difficulty": 2,
+    "tags": ["суппозитории", "основа", "Oleum Cacao", "Witepsol", "multi-answer"]
+  },
+  {
+    "id": "rec_071",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Как выглядит сокращённая форма прописи суппозитория с метилурацилом 0,5 г № 10?",
+    "drug_name": null,
+    "options": {
+      "A": "Supp. cum Methyluracilo 0,5 N 10",
+      "B": "Rp.: Methyluracili 0,5 / Olei Cacao 2,5 / M.f. supp. rect. N 10",
+      "C": "Tab. Methyluracili 0,5 N 10",
+      "D": "Ung. Methyluracili 10% — 25,0"
+    },
+    "correct_answer": "A",
+    "difficulty": 2,
+    "tags": ["суппозитории", "сокращённая пропись", "метилурацил", "Supp. cum"]
+  },
+  {
+    "id": "rec_072",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Что такое линимент?",
+    "drug_name": null,
+    "options": {
+      "A": "Густая мазь с высоким содержанием порошков",
+      "B": "Жидкая мазь для нанесения на кожу путём растирания",
+      "C": "Стерильный раствор для инъекций",
+      "D": "Жидкий экстракт растительного происхождения"
+    },
+    "correct_answer": "B",
+    "difficulty": 1,
+    "tags": ["линимент", "жидкая мазь", "Linimentum", "определение"]
+  },
+  {
+    "id": "rec_073",
+    "topic": "Рецептура",
+    "subtopic": "Мягкие лекарственные формы",
+    "question": "Как правильно прописать 5% линимент синтомицина в количестве 25 г?",
+    "drug_name": null,
+    "options": {
+      "A": "Rp.: Linimenti Synthomycini 5% — 25,0",
+      "B": "Rp.: Unguenti Synthomycini 5% — 25,0",
+      "C": "Rp.: Emulsi Synthomycini 5% — 25,0",
+      "D": "Rp.: Cremor Synthomycini 5% — 25,0"
+    },
+    "correct_answer": "A",
+    "difficulty": 2,
+    "tags": ["линимент", "Linimentum", "синтомицин", "пропись"]
+  },
+  {
+    "id": "rec_074",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Сколько граммов вещества нужно для приготовления 200 мл 5% водного раствора?",
+    "drug_name": null,
+    "options": {"A": "5 г", "B": "10 г", "C": "20 г", "D": "40 г"},
+    "correct_answer": "B",
+    "difficulty": 1,
+    "tags": ["растворы", "расчёт", "m=V×C/100", "5%", "200 мл"]
+  },
+  {
+    "id": "rec_075",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Какое обозначение добавляют к прописи масляного раствора в рецепте?",
+    "drug_name": null,
+    "options": {
+      "A": "aquosae",
+      "B": "oleosae",
+      "C": "spirituosae",
+      "D": "glycerinosi"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["растворы", "масляный раствор", "oleosae", "обозначение"]
+  },
+  {
+    "id": "rec_076",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Как обозначают спиртовой раствор в рецепте?",
+    "drug_name": null,
+    "options": {
+      "A": "Solutionis... aquosae",
+      "B": "Solutionis... oleosae",
+      "C": "Solutionis... spirituosae",
+      "D": "Solutionis... glycerinosae"
+    },
+    "correct_answer": "C",
+    "difficulty": 2,
+    "tags": ["растворы", "спиртовой раствор", "spirituosae", "обозначение"]
+  },
+  {
+    "id": "rec_077",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Как прописать раствор для инъекций в ампулах по 1 мл № 10?",
+    "drug_name": null,
+    "options": {
+      "A": "Rp.: Solutionis... 1,0 / M.D.S. по 1 мл в/м",
+      "B": "Rp.: Solutionis... 1,0 / D.t.d. N 10 in ampullis / S.",
+      "C": "Rp.: Solutionis... 10,0 / D.S. по 1 мл",
+      "D": "Rp.: Ampullarum... N 10 / S."
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["растворы", "ампулы", "D.t.d.", "in ampullis", "инъекции"]
+  },
+  {
+    "id": "rec_078",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Из каких частей растения готовят настои (Infusum)?",
+    "drug_name": null,
+    "options": {
+      "A": "Корни и корневища",
+      "B": "Кора",
+      "C": "Листья, трава, цветки (мягкие части)",
+      "D": "Семена"
+    },
+    "correct_answer": "C",
+    "difficulty": 1,
+    "tags": ["настой", "Infusum", "мягкие части", "листья", "трава", "цветки"]
+  },
+  {
+    "id": "rec_079",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Из каких частей растения готовят отвары (Decoctum)? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Листья и трава",
+      "B": "Корни и корневища",
+      "C": "Кора",
+      "D": "Цветки"
+    },
+    "correct_answer": "B,C",
+    "correct_answers": ["B", "C"],
+    "difficulty": 2,
+    "tags": ["отвар", "Decoctum", "корни", "кора", "твёрдые части", "multi-answer"]
+  },
+  {
+    "id": "rec_080",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Каково стандартное соотношение растительного сырья к воде при приготовлении настоя?",
+    "drug_name": null,
+    "options": {"A": "1:5", "B": "1:10", "C": "1:20", "D": "1:100"},
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["настой", "соотношение", "1:10", "Infusum"]
+  },
+  {
+    "id": "rec_081",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Нужно ли отдельно указывать воду в рецептурной прописи настоя или отвара?",
+    "drug_name": null,
+    "options": {
+      "A": "Да, всегда Aqua destillata отдельной строкой",
+      "B": "Нет — количество воды входит в запись вида «Infusi... 6,0 — 200 ml» и не выписывается отдельно",
+      "C": "Только при использовании Aqua pro injectionibus",
+      "D": "Только в официнальной прописи"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["настой", "отвар", "вода", "Aqua", "пропись"]
+  },
+  {
+    "id": "rec_082",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Как правильно прописать настой листьев сенны 6,0 г на 200 мл?",
+    "drug_name": null,
+    "options": {
+      "A": "Rp.: Infusi foliorum Sennae 6,0 — 200 ml",
+      "B": "Rp.: Decoctum foliorum Sennae 6,0:200",
+      "C": "Rp.: Infusi Sennae 6,0 / Aquae destillatae 200 ml",
+      "D": "Rp.: Tincturae Sennae 6,0 — 200 ml"
+    },
+    "correct_answer": "A",
+    "difficulty": 3,
+    "tags": ["настой", "Infusum", "сенна", "foliorum", "листья", "пропись"]
+  },
+  {
+    "id": "rec_083",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Что такое настойка (Tinctura) в фармацевтической рецептуре?",
+    "drug_name": null,
+    "options": {
+      "A": "Водный раствор растительного сырья, приготовленный на холоде",
+      "B": "Официнальный спиртовой (или водно-спиртовой) экстракт растительного сырья",
+      "C": "Масляный раствор эфирных масел",
+      "D": "Разделённый порошок растительного происхождения"
+    },
+    "correct_answer": "B",
+    "difficulty": 1,
+    "tags": ["настойки", "Tinctura", "спиртовой экстракт", "официнальный"]
+  },
+  {
+    "id": "rec_084",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Как правильно прописать настойку валерианы 30 мл?",
+    "drug_name": null,
+    "options": {
+      "A": "Rp.: Tincturae Valerianae 1:5 — 30 ml",
+      "B": "Rp.: Tincturae Valerianae officinalis 30 ml",
+      "C": "Rp.: Tincturae Valerianae 30 ml",
+      "D": "Rp.: Extracti Valerianae fluidi 30 ml"
+    },
+    "correct_answer": "C",
+    "difficulty": 2,
+    "tags": ["настойки", "Tinctura", "валериана", "концентрация не указывается"]
+  },
+  {
+    "id": "rec_085",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Нужно ли указывать концентрацию при выписывании настойки?",
+    "drug_name": null,
+    "options": {
+      "A": "Да, всегда (1:5 для несильнодействующих, 1:10 для сильнодействующих)",
+      "B": "Нет — настойки всегда официнальные, концентрация и часть растения не указываются",
+      "C": "Только если это сильнодействующий препарат",
+      "D": "Только в развёрнутой форме прописи"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["настойки", "Tinctura", "официнальный", "концентрация"]
+  },
+  {
+    "id": "rec_086",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Какие виды экстрактов существуют в фармацевтической рецептуре? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Жидкие (Extracta fluida)",
+      "B": "Густые (Extracta spissa)",
+      "C": "Сухие (Extracta sicca)",
+      "D": "Газообразные (Extracta gasosa)"
+    },
+    "correct_answer": "A,B,C",
+    "correct_answers": ["A", "B", "C"],
+    "difficulty": 2,
+    "tags": ["экстракты", "fluida", "spissa", "sicca", "виды", "multi-answer"]
+  },
+  {
+    "id": "rec_087",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Как прописывают жидкие экстракты (Extracta fluida)?",
+    "drug_name": null,
+    "options": {
+      "A": "Только в капсулах",
+      "B": "Аналогично настойкам — в чистом виде с указанием количества",
+      "C": "Только в суппозиториях",
+      "D": "Только в форме порошков"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["экстракты", "Extracta fluida", "жидкие", "пропись"]
+  },
+  {
+    "id": "rec_088",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "В каких лекарственных формах применяют сухие экстракты (Extracta sicca)?",
+    "drug_name": null,
+    "options": {
+      "A": "В чистом виде как раствор",
+      "B": "В порошках и капсулах",
+      "C": "Только в суппозиториях",
+      "D": "В инъекционных растворах"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["экстракты", "Extracta sicca", "сухие", "порошки", "капсулы"]
+  },
+  {
+    "id": "rec_089",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Какой объём (в мл) соответствует столовой ложке при расчёте числа приёмов микстуры?",
+    "drug_name": null,
+    "options": {"A": "5 мл", "B": "10 мл", "C": "15 мл", "D": "20 мл"},
+    "correct_answer": "C",
+    "difficulty": 1,
+    "tags": ["микстуры", "столовая ложка", "15 мл", "расчёт"]
+  },
+  {
+    "id": "rec_090",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Какой объём соответствует десертной ложке при расчёте числа приёмов микстуры?",
+    "drug_name": null,
+    "options": {"A": "5 мл", "B": "10 мл", "C": "15 мл", "D": "20 мл"},
+    "correct_answer": "B",
+    "difficulty": 1,
+    "tags": ["микстуры", "десертная ложка", "10 мл", "расчёт"]
+  },
+  {
+    "id": "rec_091",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Что означает аббревиатура «M.D.S.» в прописи микстуры?",
+    "drug_name": null,
+    "options": {
+      "A": "Misce, dosis, signa (Смешай, дозируй, обозначь)",
+      "B": "Misce, da, signa (Смешай, выдай, обозначь)",
+      "C": "Maximum dose signa (Максимальная доза, обозначь)",
+      "D": "Mixturam da signa (Выдай микстуру, обозначь)"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["M.D.S.", "Misce da signa", "микстуры", "латынь"]
+  },
+  {
+    "id": "rec_092",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Сколько мл микстуры нужно выписать на 10 приёмов, если принимать по 1 столовой ложке?",
+    "drug_name": null,
+    "options": {"A": "100 мл", "B": "150 мл", "C": "200 мл", "D": "50 мл"},
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["микстуры", "расчёт", "приёмы", "столовая ложка", "150 мл"]
+  },
+  {
+    "id": "rec_093",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Какие из следующих утверждений о суспензиях являются верными? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Суспензии необходимо взбалтывать перед употреблением",
+      "B": "Суспензии разрешено вводить внутривенно",
+      "C": "Суспензии нельзя вводить внутривенно — возможна эмболия",
+      "D": "Суспензии содержат нерастворимые частицы твёрдого вещества"
+    },
+    "correct_answer": "A,C,D",
+    "correct_answers": ["A", "C", "D"],
+    "difficulty": 2,
+    "tags": ["суспензии", "взбалтывать", "нельзя в/в", "нерастворимые частицы", "multi-answer"]
+  },
+  {
+    "id": "rec_094",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Как обозначают суспензию в рецептурной прописи?",
+    "drug_name": null,
+    "options": {
+      "A": "M.f. emulsum",
+      "B": "M.f. suspensio",
+      "C": "M.f. solutio",
+      "D": "M.f. pasta"
+    },
+    "correct_answer": "B",
+    "difficulty": 1,
+    "tags": ["суспензии", "M.f. suspensio", "обозначение"]
+  },
+  {
+    "id": "rec_095",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Каково стандартное соотношение масло : эмульгатор : вода при приготовлении 20 г эмульсии?",
+    "drug_name": null,
+    "options": {
+      "A": "1 : 1 : 10",
+      "B": "2 : 1 : 17",
+      "C": "1 : 2 : 10",
+      "D": "3 : 1 : 16"
+    },
+    "correct_answer": "B",
+    "difficulty": 3,
+    "tags": ["эмульсии", "соотношение", "2:1:17", "масло", "эмульгатор", "вода"]
+  },
+  {
+    "id": "rec_096",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Каково соотношение семена : вода при приготовлении семенной эмульсии?",
+    "drug_name": null,
+    "options": {"A": "1:5", "B": "1:10", "C": "1:20", "D": "2:17"},
+    "correct_answer": "B",
+    "difficulty": 3,
+    "tags": ["эмульсии", "семенная эмульсия", "1:10", "соотношение"]
+  },
+  {
+    "id": "rec_097",
+    "topic": "Рецептура",
+    "subtopic": "Стерильные лекарственные формы",
+    "question": "Чем отличается Aqua pro injectionibus от Aqua destillata? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Aqua pro injectionibus апирогенна (не содержит пирогенов)",
+      "B": "Aqua pro injectionibus стерильна",
+      "C": "Aqua pro injectionibus содержит консерванты",
+      "D": "Aqua destillata и Aqua pro injectionibus — одно и то же"
+    },
+    "correct_answer": "A,B",
+    "correct_answers": ["A", "B"],
+    "difficulty": 2,
+    "tags": ["Aqua pro injectionibus", "вода для инъекций", "апирогенная", "стерильная", "multi-answer"]
+  },
+  {
+    "id": "rec_098",
+    "topic": "Рецептура",
+    "subtopic": "Стерильные лекарственные формы",
+    "question": "Почему в прописях инъекционных растворов нельзя использовать Aqua destillata вместо Aqua pro injectionibus?",
+    "drug_name": null,
+    "options": {
+      "A": "Дистиллированная вода слишком дорогая",
+      "B": "Дистиллированная вода не является апирогенной и стерильной — введение может вызвать реакцию на пирогены",
+      "C": "Дистиллированная вода токсична при внутривенном введении",
+      "D": "Дистиллированная вода не смешивается с лекарственными веществами"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["Aqua pro injectionibus", "Aqua destillata", "пирогены", "инъекции", "стерильность"]
+  },
+  {
+    "id": "rec_099",
+    "topic": "Рецептура",
+    "subtopic": "Стерильные лекарственные формы",
+    "question": "Почему глазные капли относят к стерильным лекарственным формам?",
+    "drug_name": null,
+    "options": {
+      "A": "Они всегда содержат антибиотики",
+      "B": "Конъюнктива лишена защитного барьера против инфекций — нестерильный препарат может вызвать тяжёлую инфекцию глаза",
+      "C": "Глазные капли вводятся внутривенно",
+      "D": "Они производятся только в ампулах"
+    },
+    "correct_answer": "B",
+    "difficulty": 2,
+    "tags": ["глазные капли", "стерильные формы", "конъюнктива", "Guttae ophthalmicae"]
+  },
+  {
+    "id": "rec_100",
+    "topic": "Рецептура",
+    "subtopic": "Жидкие лекарственные формы",
+    "question": "Какие утверждения о жидких лекарственных формах являются верными? (Выберите все верные)",
+    "drug_name": null,
+    "options": {
+      "A": "Настои готовят из мягких частей растений (листья, трава, цветки)",
+      "B": "Отвары готовят из твёрдых частей растений (корни, кора, корневища)",
+      "C": "Настойки всегда официнальные — концентрацию и часть растения в рецепте не указывают",
+      "D": "Суспензии разрешено вводить внутривенно"
+    },
+    "correct_answer": "A,B,C",
+    "correct_answers": ["A", "B", "C"],
+    "difficulty": 3,
+    "tags": ["настой", "отвар", "настойки", "суспензии", "итоговый", "multi-answer"]
   }
 ]

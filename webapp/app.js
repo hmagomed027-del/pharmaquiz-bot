@@ -286,10 +286,13 @@ async function showTrainingQ() {
   }
 }
 
+function isMultiAnswer(q) { return q.correct_answer && q.correct_answer.includes(','); }
+
 function renderTrainingQ(q) {
   const sc = APP.querySelector('.screen'); if (!sc) return;
   const { todayTotal: tt, todayCorrect: tc } = S.training;
   const progPct = tt > 0 ? Math.round(tc/tt*100) : 0;
+  const multi = isMultiAnswer(q);
 
   sc.innerHTML = `
     <div>
@@ -303,36 +306,60 @@ function renderTrainingQ(q) {
     <div class="q-card">
       <div class="q-meta">${esc(q.subtopic || q.topic)}</div>
       <div class="q-text">${esc(q.question)}</div>
+      ${multi ? `<div style="font-size:12px;color:var(--hint);margin-top:6px">✏️ Выберите все верные ответы</div>` : ''}
     </div>
 
     <div class="answers">
       ${['A','B','C','D'].map(l => `
-        <button class="ans-btn" id="t${l}" onclick="submitTraining('${l}')">
+        <button class="ans-btn${multi?' multi':''}" id="t${l}" onclick="${multi?`toggleTraining('${l}')`:`submitTraining('${l}')`}">
           <div class="letter">${l}</div>
           <div>${esc(q.options[l])}</div>
         </button>
       `).join('')}
     </div>
 
+    ${multi ? `<button class="btn btn-primary" id="t-check" onclick="submitTrainingMulti()" disabled style="opacity:.45">Проверить</button>` : ''}
     <div id="t-result"></div>
   `;
 }
 
-async function submitTraining(letter) {
+function toggleTraining(letter) {
+  if (S.training.answered) return;
+  const btn = document.getElementById('t' + letter); if (!btn) return;
+  btn.classList.toggle('picked');
+  haptic('sel');
+  const anyPicked = ['A','B','C','D'].some(l => document.getElementById('t'+l)?.classList.contains('picked'));
+  const chk = document.getElementById('t-check');
+  if (chk) { chk.disabled = !anyPicked; chk.style.opacity = anyPicked ? '1' : '.45'; }
+}
+
+async function submitTrainingMulti() {
+  if (S.training.answered) return;
+  const chosen = ['A','B','C','D'].filter(l => document.getElementById('t'+l)?.classList.contains('picked'));
+  if (!chosen.length) return;
+  await submitTraining(chosen.join(','));
+}
+
+async function submitTraining(chosen) {
   if (S.training.answered) return;
   S.training.answered = true;
   const q = S.training.question;
   ['A','B','C','D'].forEach(l => document.getElementById('t'+l)?.classList.add('disabled'));
+  const chk = document.getElementById('t-check');
+  if (chk) { chk.disabled = true; chk.style.opacity = '.45'; }
   haptic('light');
 
   try {
-    const res = await api('/training/answer', { method:'POST', body:{ question_id:q.id, chosen_answer:letter } });
-    const correct = res.correct_answer; const ok = letter === correct;
+    const res = await api('/training/answer', { method:'POST', body:{ question_id:q.id, chosen_answer:chosen } });
+    const correct = res.correct_answer;
+    const correctSet = new Set(correct.split(','));
+    const chosenSet  = new Set(chosen.split(','));
+    const ok = res.is_correct;
 
     ['A','B','C','D'].forEach(l => {
       const btn = document.getElementById('t'+l); if (!btn) return;
-      if (l === correct) btn.classList.add('correct');
-      else if (l === letter && !ok) btn.classList.add('wrong');
+      if (correctSet.has(l)) btn.classList.add('correct');
+      else if (chosenSet.has(l) && !correctSet.has(l)) btn.classList.add('wrong');
     });
 
     haptic(ok ? 'ok' : 'err');
@@ -470,7 +497,9 @@ function showExamQ() {
   const { questions, currentIndex, answers, timeLimit } = S.exam;
   const q = questions[currentIndex]; const total = questions.length;
   const pct = Math.round(currentIndex / total * 100);
-  const picked = answers[q.id]?.chosen;
+  const multi = isMultiAnswer(q);
+  const savedChosen = answers[q.id]?.chosen || '';
+  const savedSet = new Set(savedChosen ? savedChosen.split(',') : []);
 
   backBtn(true, () => { if (confirm('Завершить экзамен досрочно?')) finishExam(); });
 
@@ -490,11 +519,12 @@ function showExamQ() {
     <div class="q-card">
       <div class="q-meta">${esc(q.subtopic || q.topic)}</div>
       <div class="q-text">${esc(q.question)}</div>
+      ${multi ? `<div style="font-size:12px;color:var(--hint);margin-top:6px">✏️ Выберите все верные ответы</div>` : ''}
     </div>
 
     <div class="answers">
       ${['A','B','C','D'].map(l => `
-        <button class="ans-btn ${picked===l?'picked':''}" id="eb${l}" onclick="pickExamAns('${l}')">
+        <button class="ans-btn${multi?' multi':''} ${savedSet.has(l)?'picked':''}" id="eb${l}" onclick="${multi?`toggleExamAns('${l}')`:`pickExamAns('${l}')`}">
           <div class="letter">${l}</div><div>${esc(q.options[l])}</div>
         </button>
       `).join('')}
@@ -520,6 +550,16 @@ function pickExamAns(l) {
   S.exam.answers[q.id] = { chosen:l, is_skipped:false };
   document.querySelectorAll('[id^="eb"]').forEach(b => b.classList.remove('picked'));
   document.getElementById('eb'+l)?.classList.add('picked');
+  haptic('sel');
+}
+
+function toggleExamAns(l) {
+  if (S.exam.finished) return;
+  const q = S.exam.questions[S.exam.currentIndex];
+  const btn = document.getElementById('eb' + l); if (!btn) return;
+  btn.classList.toggle('picked');
+  const picked = ['A','B','C','D'].filter(x => document.getElementById('eb'+x)?.classList.contains('picked'));
+  S.exam.answers[q.id] = { chosen: picked.join(',') || null, is_skipped: false };
   haptic('sel');
 }
 function skipExamQ() {
@@ -611,17 +651,22 @@ function showExamResult(result) {
 
     ${wrong.length > 0 ? `
       <div class="section-title">Разбор ошибок (${wrong.length})</div>
-      ${wrong.map((d,i) => `
+      ${wrong.map((d,i) => {
+        const corrLetters = d.correct_answer ? d.correct_answer.split(',') : [];
+        const corrText = corrLetters.map(l => `${l}) ${d.options[l]}`).join(', ');
+        const chosenLetters = d.chosen_answer ? d.chosen_answer.split(',') : [];
+        const chosenText = chosenLetters.map(l => `${l}) ${d.options[l]}`).join(', ');
+        return `
         <div class="err-item">
           <div class="err-q">${esc(d.question)}</div>
           <div>
-            ${d.chosen_answer ? `<div class="err-wrong">❌ ${d.chosen_answer}) ${esc(d.options[d.chosen_answer])}</div>` : ''}
-            <div class="err-corr">✅ ${d.correct_answer}) ${esc(d.options[d.correct_answer])}</div>
+            ${d.chosen_answer ? `<div class="err-wrong">❌ ${esc(chosenText)}</div>` : ''}
+            <div class="err-corr">✅ ${esc(corrText)}</div>
           </div>
           <button class="chip" onclick="toggleExpl('xe${i}','${d.question_id}',this)">Объяснение</button>
           <div id="xe${i}" style="display:none"></div>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     ` : ''}
 
     <button class="btn btn-primary" onclick="showHome()">На главную</button>

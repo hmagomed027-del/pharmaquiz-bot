@@ -7,8 +7,21 @@ from bot.database import queries
 
 logger = logging.getLogger(__name__)
 
-REQUIRED_FIELDS = {"id", "topic", "question", "options", "correct_answer"}
+REQUIRED_FIELDS = {"id", "topic", "question", "options"}
 REQUIRED_OPTIONS = {"A", "B", "C", "D"}
+
+
+def _normalize_correct_answer(q: dict) -> str | None:
+    """Return comma-joined correct answers string, e.g. 'A' or 'A,C'."""
+    if "correct_answers" in q and isinstance(q["correct_answers"], list):
+        letters = sorted(set(q["correct_answers"]))
+        if all(l in REQUIRED_OPTIONS for l in letters) and letters:
+            return ",".join(letters)
+        return None
+    val = q.get("correct_answer")
+    if val in REQUIRED_OPTIONS:
+        return val
+    return None
 
 
 def _validate(q: dict, filepath: str) -> bool:
@@ -19,8 +32,8 @@ def _validate(q: dict, filepath: str) -> bool:
     if not isinstance(q.get("options"), dict) or set(q["options"].keys()) != REQUIRED_OPTIONS:
         logger.warning("Question %s in %s: options must have keys A,B,C,D — skipping", q.get("id"), filepath)
         return False
-    if q.get("correct_answer") not in REQUIRED_OPTIONS:
-        logger.warning("Question %s in %s: invalid correct_answer — skipping", q.get("id"), filepath)
+    if _normalize_correct_answer(q) is None:
+        logger.warning("Question %s in %s: invalid correct_answer/correct_answers — skipping", q.get("id"), filepath)
         return False
     return True
 
@@ -44,7 +57,9 @@ async def load_questions_from_file(db: aiosqlite.Connection, filepath: str) -> i
         if await queries.question_exists(db, q["id"]):
             continue
         try:
-            await queries.insert_question(db, q)
+            q_normalized = dict(q)
+            q_normalized["correct_answer"] = _normalize_correct_answer(q)
+            await queries.insert_question(db, q_normalized)
             inserted += 1
         except Exception as e:
             logger.error("Failed to insert question %s: %s", q.get("id"), e)
