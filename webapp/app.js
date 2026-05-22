@@ -2,31 +2,27 @@
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
-const INIT_DATA = tg?.initData || '';
+/* ── User info ────────────────────────────────────────────────────────── */
+const TG_USER    = tg?.initDataUnsafe?.user || {};
+const FIRST_NAME = TG_USER.first_name || '';
+const USERNAME   = TG_USER.username   || '';
+const DISPLAY    = FIRST_NAME || (USERNAME ? `@${USERNAME}` : 'Студент');
+const AVATAR_LTR = (FIRST_NAME[0] || USERNAME[0] || 'С').toUpperCase();
+const INIT_DATA  = tg?.initData || '';
+
 const APP = document.getElementById('app');
 
 /* ── State ────────────────────────────────────────────────────────────── */
 const S = {
   training: {
-    topic: null,
-    question: null,
-    answeredIds: [],
-    answered: false,
-    todayTotal: 0,
-    todayCorrect: 0,
+    topic: null, question: null, answeredIds: [],
+    answered: false, todayTotal: 0, todayCorrect: 0,
   },
   exam: {
-    topic: null,
-    count: 10,
-    timeLimit: null,       // seconds or null
-    sessionId: null,
-    questions: [],
-    currentIndex: 0,
-    answers: {},           // { question_id: {chosen, is_skipped} }
-    startTime: null,
-    timerIv: null,
-    warnShown: false,
-    finished: false,
+    topic: null, count: 10, timeLimit: null,
+    sessionId: null, questions: [], currentIndex: 0,
+    answers: {}, startTime: null, timerIv: null,
+    warnShown: false, finished: false,
   },
 };
 
@@ -34,77 +30,101 @@ const S = {
 async function api(path, opts = {}) {
   const res = await fetch('/api' + path, {
     ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Init-Data': INIT_DATA,
-      ...(opts.headers || {}),
-    },
+    headers: { 'Content-Type': 'application/json', 'X-Init-Data': INIT_DATA, ...(opts.headers || {}) },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
-  }
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || `HTTP ${res.status}`); }
   return res.json();
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function fmt(sec) {
-  const s = Math.abs(sec);
-  return `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
-}
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(s) { const a = Math.abs(s); return `${String(Math.floor(a/60)).padStart(2,'0')}:${String(a%60).padStart(2,'0')}`; }
 
 function grade(pct) {
-  if (pct >= 90) return { e: '🌟', t: 'Отлично!' };
-  if (pct >= 75) return { e: '✅', t: 'Хорошо!' };
-  if (pct >= 60) return { e: '📚', t: 'Удовлетворительно' };
-  return { e: '📖', t: 'Нужно повторить' };
+  if (pct >= 90) return { e:'🌟', t:'Блестяще!' };
+  if (pct >= 75) return { e:'✅', t:'Хорошо!' };
+  if (pct >= 60) return { e:'📚', t:'Удовлетворительно' };
+  return { e:'📖', t:'Нужно повторить' };
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6)  return 'Ночная смена! 🌙';
+  if (h < 12) return 'Доброе утро!';
+  if (h < 17) return 'Добрый день!';
+  if (h < 21) return 'Добрый вечер!';
+  return 'Вечерняя учёба 🌙';
+}
+
+function getMotto() {
+  const mottos = [
+    'Повторение — мать учения. Ещё один вопрос!',
+    'Каждый правильный ответ — шаг к пятёрке.',
+    'Фармакология — это логика, а не зубрёжка.',
+    'Ты справишься! Главное — понять механизм.',
+    'Отличный врач знает не только «что», но и «почему».',
+    'Сегодняшняя тренировка — это завтрашняя уверенность.',
+    'Механизм → Применение → Побочки. Три кита фармакологии!',
+  ];
+  return mottos[new Date().getDate() % mottos.length];
 }
 
 function toast(msg) {
-  document.querySelectorAll('.toast').forEach(el => el.remove());
+  document.querySelectorAll('.toast').forEach(e => e.remove());
   const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
+  el.className = 'toast'; el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
 
-function haptic(type) {
+function haptic(t) {
   if (!tg?.HapticFeedback) return;
-  if (type === 'select') tg.HapticFeedback.selectionChanged();
-  else if (type === 'ok') tg.HapticFeedback.notificationOccurred('success');
-  else if (type === 'err') tg.HapticFeedback.notificationOccurred('error');
-  else if (type === 'warn') tg.HapticFeedback.notificationOccurred('warning');
-  else tg.HapticFeedback.impactOccurred(type || 'light');
+  if (t === 'ok') tg.HapticFeedback.notificationOccurred('success');
+  else if (t === 'err') tg.HapticFeedback.notificationOccurred('error');
+  else if (t === 'warn') tg.HapticFeedback.notificationOccurred('warning');
+  else if (t === 'sel') tg.HapticFeedback.selectionChanged();
+  else tg.HapticFeedback.impactOccurred(t || 'light');
 }
 
-function backBtn(show, handler) {
+function backBtn(show, fn) {
   if (!tg?.BackButton) return;
-  if (show) {
-    tg.BackButton.offClick();
-    tg.BackButton.onClick(handler);
-    tg.BackButton.show();
-  } else {
-    tg.BackButton.hide();
+  if (show) { tg.BackButton.offClick(); tg.BackButton.onClick(fn); tg.BackButton.show(); }
+  else tg.BackButton.hide();
+}
+
+function confetti() {
+  const colors = ['#2D6A4F','#52B788','#f4a523','#3a7bd5','#d62828','#40916C'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}%;top:-20px;background:${colors[i%colors.length]};
+      --dur:${.8+Math.random()*1.2}s;--rot:${Math.random()*720}deg;
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
   }
 }
 
 /* ── Render helpers ───────────────────────────────────────────────────── */
 function setApp(html) { APP.innerHTML = html; }
-
-function page(headerHtml, bodyHtml) {
-  setApp(`${headerHtml}<div class="screen">${bodyHtml}</div>`);
-}
-
+function page(hdrHtml, bodyHtml) { setApp(`${hdrHtml}<div class="screen">${bodyHtml}</div>`); }
 function hdr(title, onBack) {
   return onBack
     ? `<div class="hdr"><button class="back-btn" onclick="(${onBack})()">&larr;</button><h1>${esc(title)}</h1></div>`
     : `<div class="hdr"><h1>${esc(title)}</h1></div>`;
+}
+
+/* ── Avatar HTML ─────────────────────────────────────────────────────── */
+function avatarHtml(size = 52) {
+  if (TG_USER.photo_url) {
+    return `<img class="avatar-img" src="${esc(TG_USER.photo_url)}" width="${size}" height="${size}" style="width:${size}px;height:${size}px" onerror="this.outerHTML=avatarLetterHtml(${size})">`;
+  }
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.4)}px">${AVATAR_LTR}</div>`;
+}
+function avatarLetterHtml(size) {
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.4)}px">${AVATAR_LTR}</div>`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -114,11 +134,16 @@ async function showHome() {
   backBtn(false);
 
   page('', `
-    <div style="text-align:center;padding:10px 0 4px">
-      <div style="font-size:52px">💊</div>
-      <div style="font-size:22px;font-weight:800;margin-top:6px">ФармаКвиз</div>
-      <div style="font-size:13px;color:var(--hint);margin-top:4px">Фармакология — подготовка к экзаменам</div>
+    <div class="hero">
+      ${avatarHtml(52)}
+      <div class="hero-info">
+        <div class="hero-greet">${getGreeting()}</div>
+        <div class="hero-name">${esc(DISPLAY)}</div>
+        <div class="hero-streak" id="h-streak">Загружаем статистику…</div>
+      </div>
     </div>
+
+    <div class="motto">${getMotto()}</div>
 
     <div class="stats-row">
       <div class="stat"><div class="stat-val" id="h-total">—</div><div class="stat-lbl">Сегодня</div></div>
@@ -130,17 +155,17 @@ async function showHome() {
       <button class="menu-card full" onclick="showTopicPick('training')">
         <div class="menu-icon">📖</div>
         <div class="menu-title">Тренировка</div>
-        <div class="menu-sub">Вопрос за вопросом с объяснениями</div>
+        <div class="menu-sub">Вопрос за вопросом с объяснениями и картинками</div>
       </button>
       <button class="menu-card" onclick="showExamSetup()">
         <div class="menu-icon">📝</div>
         <div class="menu-title">Экзамен</div>
-        <div class="menu-sub">С таймером</div>
+        <div class="menu-sub">С таймером и разбором ошибок</div>
       </button>
       <button class="menu-card" onclick="showStats()">
         <div class="menu-icon">📊</div>
         <div class="menu-title">Статистика</div>
-        <div class="menu-sub">Мой прогресс</div>
+        <div class="menu-sub">Мой прогресс по темам</div>
       </button>
     </div>
   `);
@@ -148,60 +173,76 @@ async function showHome() {
   try {
     const stats = await api('/stats');
     const t = stats.today || {};
-    const total = t.total || 0;
-    const corr  = t.correct || 0;
+    const total = t.total || 0; const corr = t.correct || 0;
     document.getElementById('h-total').textContent = total;
     document.getElementById('h-corr').textContent = corr;
     document.getElementById('h-pct').textContent = total > 0 ? `${Math.round(corr/total*100)}%` : '—';
-    S.training.todayTotal   = total;
-    S.training.todayCorrect = corr;
-  } catch (_) {}
+    S.training.todayTotal = total; S.training.todayCorrect = corr;
+
+    const allTotal = stats.total || 0;
+    const streak = document.getElementById('h-streak');
+    if (streak) {
+      if (total > 0) streak.textContent = `${total} ответов сегодня · ${corr} верных`;
+      else streak.textContent = `Всего ответов: ${allTotal}`;
+    }
+  } catch (_) {
+    const streak = document.getElementById('h-streak');
+    if (streak) streak.textContent = 'Начни тренировку!';
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
    TOPIC PICKER
 ══════════════════════════════════════════════════════════════════════ */
 async function showTopicPick(mode) {
-  const titleMap = { training: 'Тренировка', exam: 'Экзамен' };
+  const titles = { training: 'Тренировка', exam: 'Экзамен' };
   backBtn(true, showHome);
 
-  page(hdr(titleMap[mode] || 'Выбор темы', showHome), `
+  page(hdr(titles[mode] || 'Выбор темы', showHome), `
     <div class="topic-list" id="tlist">
       <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
     </div>
   `);
 
   try {
-    const topics = await api('/topics');
+    const [topics, stats] = await Promise.all([
+      api('/topics'),
+      api('/stats').catch(() => ({ topics: [] })),
+    ]);
+
+    const topicStats = {};
+    (stats.topics || []).forEach(t => { topicStats[t.topic] = t; });
+
     const list = document.getElementById('tlist');
     if (!list) return;
-    list.innerHTML = topics.map(t => `
-      <button class="topic-item" onclick="onTopicPick('${mode}','${t.topic.replace(/'/g,"\\'")}')">
-        <div class="topic-icon">${t.icon}</div>
-        <div class="topic-info">
-          <div class="topic-name">${esc(t.topic)}</div>
-          <div class="topic-cnt">${t.count} вопросов</div>
-        </div>
-        <div class="topic-arr">›</div>
-      </button>
-    `).join('');
-  } catch (e) {
-    document.getElementById('tlist').innerHTML = `
-      <div style="text-align:center;color:var(--hint);padding:40px 0">Не удалось загрузить темы</div>
-      <button class="btn btn-secondary" onclick="showTopicPick('${mode}')">Повторить</button>
-    `;
+    list.innerHTML = topics.map(t => {
+      const ts = topicStats[t.topic];
+      const pctLine = ts && ts.total > 0
+        ? `<div class="topic-pct">✅ ${Math.round(ts.correct/ts.total*100)}% верных</div>`
+        : '';
+      return `
+        <button class="topic-item" onclick="onTopicPick('${mode}','${t.topic.replace(/'/g,"\\'")}')">
+          <div class="topic-icon">${t.icon}</div>
+          <div class="topic-info">
+            <div class="topic-name">${esc(t.topic)}</div>
+            <div class="topic-cnt">${t.count} вопросов</div>
+            ${pctLine}
+          </div>
+          <div class="topic-arr">›</div>
+        </button>
+      `;
+    }).join('');
+  } catch (_) {
+    const l = document.getElementById('tlist');
+    if (l) l.innerHTML = `<div style="text-align:center;color:var(--hint);padding:40px 0">Не удалось загрузить темы</div>
+      <button class="btn btn-secondary" onclick="showTopicPick('${mode}')">Повторить</button>`;
   }
 }
 
 function onTopicPick(mode, topic) {
-  if (mode === 'training') {
-    S.training.topic = topic;
-    S.training.answeredIds = [];
-    showTrainingQ();
-  } else {
-    S.exam.topic = topic;
-    showExamSetup();
-  }
+  haptic('sel');
+  if (mode === 'training') { S.training.topic = topic; S.training.answeredIds = []; showTrainingQ(); }
+  else { S.exam.topic = topic; showExamSetup(); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -212,8 +253,8 @@ async function showTrainingQ() {
   S.training.answered = false;
 
   page(hdr(S.training.topic, () => showTopicPick('training')), `
-    <div style="text-align:center;color:var(--hint);padding:50px 0">
-      <div class="spinner" style="margin:0 auto 10px"></div>Загружаем вопрос…
+    <div class="loading-screen" style="min-height:200px">
+      <div class="spinner"></div><p>Загружаем вопрос…</p>
     </div>
   `);
 
@@ -222,12 +263,11 @@ async function showTrainingQ() {
     const q = await api(`/question?topic=${encodeURIComponent(S.training.topic)}&exclude=${excl}`);
 
     if (!q || !q.id) {
-      // Finished all questions
       APP.querySelector('.screen').innerHTML = `
         <div style="text-align:center;padding:40px 0">
-          <div style="font-size:48px">🎉</div>
-          <div style="font-size:18px;font-weight:700;margin-top:10px">Все вопросы пройдены!</div>
-          <div style="color:var(--hint);margin-top:6px;font-size:14px">Начнём заново?</div>
+          <div style="font-size:52px">🎉</div>
+          <div style="font-size:18px;font-weight:800;margin-top:12px">Все вопросы пройдены!</div>
+          <div style="color:var(--hint);margin-top:6px;font-size:14px">${esc(FIRST_NAME) ? `Отличная работа, ${esc(FIRST_NAME)}!` : 'Отличная работа!'}</div>
         </div>
         <button class="btn btn-primary" onclick="S.training.answeredIds=[];showTrainingQ()">Начать заново</button>
         <button class="btn btn-secondary" onclick="showTopicPick('training')">Сменить тему</button>
@@ -235,26 +275,29 @@ async function showTrainingQ() {
       `;
       return;
     }
-
     S.training.question = q;
-    renderTrainingQuestion(q);
-  } catch (e) {
-    APP.querySelector('.screen').innerHTML = `
-      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки вопроса</div>
+    renderTrainingQ(q);
+  } catch (_) {
+    const sc = APP.querySelector('.screen');
+    if (sc) sc.innerHTML = `
+      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>
       <button class="btn btn-secondary" onclick="showTrainingQ()">Повторить</button>
     `;
   }
 }
 
-function renderTrainingQuestion(q) {
-  const sc = APP.querySelector('.screen');
-  if (!sc) return;
+function renderTrainingQ(q) {
+  const sc = APP.querySelector('.screen'); if (!sc) return;
   const { todayTotal: tt, todayCorrect: tc } = S.training;
-  const pct = tt > 0 ? `${Math.round(tc/tt*100)}%` : '';
+  const progPct = tt > 0 ? Math.round(tc/tt*100) : 0;
 
   sc.innerHTML = `
-    <div style="font-size:12px;color:var(--hint)">
-      Сегодня: ${tt} отвечено${tc > 0 ? ` · ${tc} правильно ${pct ? '('+pct+')' : ''}` : ''}
+    <div>
+      <div class="prog-row">
+        <span style="font-size:13px;color:var(--hint)">Сегодня: ${tt} / верных: ${tc}</span>
+        ${tt > 0 ? `<span style="font-size:13px;font-weight:700;color:var(--green)">${progPct}%</span>` : ''}
+      </div>
+      ${tt > 0 ? `<div class="prog-bar" style="margin-top:5px"><div class="prog-fill" style="width:${progPct}%"></div></div>` : ''}
     </div>
 
     <div class="q-card">
@@ -278,25 +321,21 @@ function renderTrainingQuestion(q) {
 async function submitTraining(letter) {
   if (S.training.answered) return;
   S.training.answered = true;
-
   const q = S.training.question;
   ['A','B','C','D'].forEach(l => document.getElementById('t'+l)?.classList.add('disabled'));
   haptic('light');
 
   try {
-    const res = await api('/training/answer', { method: 'POST', body: { question_id: q.id, chosen_answer: letter } });
-    const correct = res.correct_answer;
-    const ok = letter === correct;
+    const res = await api('/training/answer', { method:'POST', body:{ question_id:q.id, chosen_answer:letter } });
+    const correct = res.correct_answer; const ok = letter === correct;
 
     ['A','B','C','D'].forEach(l => {
-      const btn = document.getElementById('t'+l);
-      if (!btn) return;
+      const btn = document.getElementById('t'+l); if (!btn) return;
       if (l === correct) btn.classList.add('correct');
       else if (l === letter && !ok) btn.classList.add('wrong');
     });
 
     haptic(ok ? 'ok' : 'err');
-
     S.training.todayTotal   = res.today.total;
     S.training.todayCorrect = res.today.correct;
     if (!S.training.answeredIds.includes(q.id)) S.training.answeredIds.push(q.id);
@@ -304,12 +343,16 @@ async function submitTraining(letter) {
     const rArea = document.getElementById('t-result');
     if (rArea) {
       rArea.innerHTML = `
-        <div style="text-align:center;font-size:20px;font-weight:800;color:${ok?'var(--green)':'var(--red)'}">
-          ${ok ? '✅ Правильно!' : '❌ Неправильно'}
-        </div>
-        ${q.drug_name ? `<div id="t-img"><div class="expl-loading"><div class="spinner"></div>Ищем изображение…</div></div>` : ''}
-        <div class="expl-loading" id="t-expl-load"><div class="spinner"></div>Генерируем объяснение…</div>
+        <div class="result-badge ${ok ? 'ok' : 'bad'}">${ok ? '✅ Правильно!' : '❌ Неправильно'}</div>
+
+        ${q.drug_name ? `
+          <div class="drug-img-wrap" id="t-img">
+            <div class="expl-loading"><div class="spinner sm"></div>Ищем изображение…</div>
+          </div>` : ''}
+
+        <div class="expl-loading" id="t-expl-load"><div class="spinner sm"></div>Генерируем объяснение…</div>
         <div id="t-expl"></div>
+
         <button class="btn btn-primary" onclick="showTrainingQ()">Следующий вопрос →</button>
         <button class="btn btn-secondary" onclick="showTopicPick('training')">Сменить тему</button>
         <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>
@@ -317,9 +360,7 @@ async function submitTraining(letter) {
       if (q.drug_name) loadImg(q.drug_name, 't-img');
       loadExpl(q.id, 't-expl-load', 't-expl');
     }
-  } catch (_) {
-    toast('Ошибка при отправке ответа');
-  }
+  } catch (_) { toast('Ошибка при отправке ответа'); }
 }
 
 async function loadExpl(qid, loadId, areaId) {
@@ -337,16 +378,12 @@ async function loadExpl(qid, loadId, areaId) {
 async function loadImg(drug, containerId) {
   try {
     const res = await api(`/image?drug=${encodeURIComponent(drug)}`);
-    const c = document.getElementById(containerId);
-    if (!c) return;
+    const c = document.getElementById(containerId); if (!c) return;
     if (res.url) {
-      c.innerHTML = `<img class="drug-img" src="${esc(res.url)}" alt="${esc(drug)}" onerror="this.parentElement.remove()">`;
-    } else {
-      c.remove();
-    }
-  } catch (_) {
-    document.getElementById(containerId)?.remove();
-  }
+      c.innerHTML = `<img class="drug-img" src="${esc(res.url)}" alt="${esc(drug)}"
+        onerror="this.closest('.drug-img-wrap')?.remove()">`;
+    } else { c.remove(); }
+  } catch (_) { document.getElementById(containerId)?.remove(); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -354,44 +391,32 @@ async function loadImg(drug, containerId) {
 ══════════════════════════════════════════════════════════════════════ */
 function showExamSetup() {
   backBtn(true, showHome);
+  const limits = [
+    { l:'10 мин', s:600 }, { l:'20 мин', s:1200 },
+    { l:'30 мин', s:1800 }, { l:'Без лимита', s:null },
+  ];
 
-  const topicSection = S.exam.topic
+  const topicBlock = S.exam.topic
     ? `<div style="display:flex;justify-content:space-between;align-items:center">
-         <span style="font-weight:600">${esc(S.exam.topic)}</span>
+         <span style="font-weight:700">${esc(S.exam.topic)}</span>
          <button class="chip" onclick="showTopicPick('exam')">Изменить</button>
        </div>`
     : `<button class="btn btn-secondary" onclick="showTopicPick('exam')">Выбрать тему →</button>`;
 
-  const timeLimits = [
-    { label: '10 мин', sec: 600 },
-    { label: '20 мин', sec: 1200 },
-    { label: '30 мин', sec: 1800 },
-    { label: 'Без лимита', sec: null },
-  ];
-
   page(hdr('Настройки экзамена', showHome), `
-    <div class="card">
-      <div class="opt-label">Тема</div>
-      ${topicSection}
-    </div>
+    <div class="card"><div class="opt-label">Тема</div>${topicBlock}</div>
 
     <div class="card">
-      <div class="opt-label">Вопросов</div>
+      <div class="opt-label">Количество вопросов</div>
       <div class="chip-group">
-        ${[10,20,30].map(n => `
-          <button class="chip ${S.exam.count===n?'on':''}" id="cn${n}" onclick="setEC(${n})">${n}</button>
-        `).join('')}
+        ${[10,20,30].map(n => `<button class="chip ${S.exam.count===n?'on':''}" id="cn${n}" onclick="setEC(${n})">${n}</button>`).join('')}
       </div>
     </div>
 
     <div class="card">
       <div class="opt-label">Лимит времени</div>
       <div class="chip-group" style="flex-direction:column;align-items:flex-start">
-        ${timeLimits.map(t => `
-          <button class="chip ${S.exam.timeLimit===t.sec?'on':''}" id="ct${t.sec}" onclick="setET(${t.sec})">
-            ${t.label}
-          </button>
-        `).join('')}
+        ${limits.map(t => `<button class="chip ${S.exam.timeLimit===t.s?'on':''}" id="ct${t.s}" onclick="setET(${t.s})">${t.l}</button>`).join('')}
       </div>
     </div>
 
@@ -402,15 +427,14 @@ function showExamSetup() {
 }
 
 function setEC(n) {
-  S.exam.count = n;
-  document.querySelectorAll('[id^="cn"]').forEach(el => el.classList.remove('on'));
+  S.exam.count = n; haptic('sel');
+  document.querySelectorAll('[id^="cn"]').forEach(e => e.classList.remove('on'));
   document.getElementById('cn'+n)?.classList.add('on');
 }
-
-function setET(sec) {
-  S.exam.timeLimit = sec;
-  document.querySelectorAll('[id^="ct"]').forEach(el => el.classList.remove('on'));
-  document.getElementById('ct'+sec)?.classList.add('on');
+function setET(s) {
+  S.exam.timeLimit = s; haptic('sel');
+  document.querySelectorAll('[id^="ct"]').forEach(e => e.classList.remove('on'));
+  document.getElementById('ct'+s)?.classList.add('on');
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -422,24 +446,20 @@ async function startExam() {
 
   try {
     const res = await api('/exam/start', {
-      method: 'POST',
-      body: { topic: S.exam.topic, count: S.exam.count, time_limit_seconds: S.exam.timeLimit },
+      method:'POST',
+      body:{ topic:S.exam.topic, count:S.exam.count, time_limit_seconds:S.exam.timeLimit },
     });
     Object.assign(S.exam, {
-      sessionId: res.session_id,
-      questions: res.questions,
-      currentIndex: 0,
-      answers: {},
-      startTime: Date.now(),
-      warnShown: false,
-      finished: false,
+      sessionId:res.session_id, questions:res.questions,
+      currentIndex:0, answers:{}, startTime:Date.now(),
+      warnShown:false, finished:false,
     });
     clearInterval(S.exam.timerIv);
     if (S.exam.timeLimit) S.exam.timerIv = setInterval(tickTimer, 1000);
     showExamQ();
-  } catch (e) {
+  } catch (_) {
     setApp(`<div class="screen">
-      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка запуска экзамена</div>
+      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка запуска</div>
       <button class="btn btn-secondary" onclick="showExamSetup()">Назад</button>
     </div>`);
   }
@@ -448,23 +468,22 @@ async function startExam() {
 function showExamQ() {
   if (S.exam.finished) return;
   const { questions, currentIndex, answers, timeLimit } = S.exam;
-  const q = questions[currentIndex];
-  const total = questions.length;
+  const q = questions[currentIndex]; const total = questions.length;
   const pct = Math.round(currentIndex / total * 100);
   const picked = answers[q.id]?.chosen;
 
-  backBtn(true, () => {
-    if (confirm('Завершить экзамен досрочно?')) finishExam();
-  });
+  backBtn(true, () => { if (confirm('Завершить экзамен досрочно?')) finishExam(); });
 
   page(`
     <div class="hdr">
       <div style="flex:1">
         <div class="prog-row">
-          <span>Вопрос ${currentIndex+1}/${total}</span>
-          ${timeLimit ? `<span class="timer" id="etimer">⏱ --:--</span>` : `<span class="timer" id="etimer" style="color:var(--hint)">⏱ 00:00</span>`}
+          <span>Вопрос ${currentIndex+1} / ${total}</span>
+          ${timeLimit
+            ? `<span class="timer" id="etimer">⏱ --:--</span>`
+            : `<span class="timer" id="etimer" style="color:var(--hint)">⏱ 00:00</span>`}
         </div>
-        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct}%"></div></div>
       </div>
     </div>
   `, `
@@ -476,8 +495,7 @@ function showExamQ() {
     <div class="answers">
       ${['A','B','C','D'].map(l => `
         <button class="ans-btn ${picked===l?'picked':''}" id="eb${l}" onclick="pickExamAns('${l}')">
-          <div class="letter">${l}</div>
-          <div>${esc(q.options[l])}</div>
+          <div class="letter">${l}</div><div>${esc(q.options[l])}</div>
         </button>
       `).join('')}
     </div>
@@ -490,73 +508,53 @@ function showExamQ() {
     </div>
 
     <div style="text-align:center;font-size:12px;color:var(--hint)">
-      Отвечено: ${Object.keys(answers).length}/${total}
+      Отвечено: ${Object.keys(answers).length} / ${total}
     </div>
   `);
-
-  tickTimer(); // update timer display immediately
+  tickTimer();
 }
 
 function pickExamAns(l) {
   if (S.exam.finished) return;
   const q = S.exam.questions[S.exam.currentIndex];
-  S.exam.answers[q.id] = { chosen: l, is_skipped: false };
-  document.querySelectorAll('[id^="eb"]').forEach(btn => btn.classList.remove('picked'));
+  S.exam.answers[q.id] = { chosen:l, is_skipped:false };
+  document.querySelectorAll('[id^="eb"]').forEach(b => b.classList.remove('picked'));
   document.getElementById('eb'+l)?.classList.add('picked');
-  haptic('select');
+  haptic('sel');
 }
-
 function skipExamQ() {
   const q = S.exam.questions[S.exam.currentIndex];
-  S.exam.answers[q.id] = { chosen: null, is_skipped: true };
+  S.exam.answers[q.id] = { chosen:null, is_skipped:true };
   nextExamQ();
 }
-
 function nextExamQ() {
   const { currentIndex, questions } = S.exam;
-  if (currentIndex < questions.length - 1) {
-    S.exam.currentIndex++;
-    showExamQ();
-  } else {
-    finishExam();
-  }
+  if (currentIndex < questions.length-1) { S.exam.currentIndex++; showExamQ(); }
+  else finishExam();
 }
 
 function tickTimer() {
-  const el = document.getElementById('etimer');
-  if (!el) return;
+  const el = document.getElementById('etimer'); if (!el) return;
   const elapsed = Math.floor((Date.now() - S.exam.startTime) / 1000);
   const limit = S.exam.timeLimit;
-
   if (limit) {
     const rem = limit - elapsed;
     if (rem <= 0) {
-      clearInterval(S.exam.timerIv);
-      el.textContent = '⏱ 00:00';
-      el.className = 'timer warn';
-      toast('⏰ Время вышло!');
-      haptic('warn');
-      setTimeout(finishExam, 1500);
-      return;
+      clearInterval(S.exam.timerIv); el.textContent = '⏱ 00:00'; el.className = 'timer warn';
+      toast('⏰ Время вышло!'); haptic('warn');
+      setTimeout(finishExam, 1500); return;
     }
     el.textContent = `⏱ ${fmt(rem)}`;
     if (rem <= 120 && !S.exam.warnShown) {
-      S.exam.warnShown = true;
-      el.className = 'timer warn';
-      toast('⚠️ Осталось 2 минуты!');
-      haptic('warn');
+      S.exam.warnShown = true; el.className = 'timer warn';
+      toast('⚠️ Осталось 2 минуты!'); haptic('warn');
     }
-  } else {
-    el.textContent = `⏱ ${fmt(elapsed)}`;
-  }
+  } else { el.textContent = `⏱ ${fmt(elapsed)}`; }
 }
 
 async function finishExam() {
   if (S.exam.finished) return;
-  S.exam.finished = true;
-  clearInterval(S.exam.timerIv);
-  backBtn(false);
-
+  S.exam.finished = true; clearInterval(S.exam.timerIv); backBtn(false);
   setApp(`<div class="loading-screen"><div class="spinner"></div><p>Подводим итоги…</p></div>`);
 
   const elapsed = Math.floor((Date.now() - S.exam.startTime) / 1000);
@@ -568,8 +566,7 @@ async function finishExam() {
 
   try {
     const result = await api('/exam/finish', {
-      method: 'POST',
-      body: { session_id: S.exam.sessionId, answers, elapsed_seconds: elapsed },
+      method:'POST', body:{ session_id:S.exam.sessionId, answers, elapsed_seconds:elapsed },
     });
     showExamResult(result);
   } catch (_) {
@@ -582,19 +579,24 @@ async function finishExam() {
 
 function showExamResult(result) {
   backBtn(false);
-  const pct = result.percent;
-  const g = grade(pct);
+  const pct = result.percent; const g = grade(pct);
   const timeStr = fmt(result.elapsed_seconds);
   const limitStr = S.exam.timeLimit ? ` из ${fmt(S.exam.timeLimit)}` : '';
   const wrong = result.details.filter(d => !d.is_correct && !d.is_skipped);
   const skipped = result.details.filter(d => d.is_skipped);
 
+  if (pct >= 75) confetti();
+
   page(hdr('Результат экзамена'), `
-    <div class="card" style="text-align:center">
-      <div style="font-size:44px">${g.e}</div>
-      <div class="result-pct">${pct}%</div>
-      <div class="result-sub">${result.correct} из ${result.total} правильно</div>
+    <div class="card result-hero">
+      <div class="result-emoji">${g.e}</div>
+
+      <div class="result-circle" style="--pct:${pct*3.6}deg" id="rcircle">
+        <div class="result-pct-text" id="rpct">0%</div>
+      </div>
+
       <div class="result-grade">${g.t}</div>
+      <div class="result-sub">${result.correct} из ${result.total} правильно</div>
     </div>
 
     <div class="card">
@@ -608,17 +610,15 @@ function showExamResult(result) {
     </div>
 
     ${wrong.length > 0 ? `
-      <div class="section-title">Разбор ошибок</div>
-      ${wrong.map((d, i) => `
+      <div class="section-title">Разбор ошибок (${wrong.length})</div>
+      ${wrong.map((d,i) => `
         <div class="err-item">
           <div class="err-q">${esc(d.question)}</div>
           <div>
             ${d.chosen_answer ? `<div class="err-wrong">❌ ${d.chosen_answer}) ${esc(d.options[d.chosen_answer])}</div>` : ''}
             <div class="err-corr">✅ ${d.correct_answer}) ${esc(d.options[d.correct_answer])}</div>
           </div>
-          <button class="chip" onclick="toggleExpl('xe${i}','${d.question_id}',this)">
-            Объяснение
-          </button>
+          <button class="chip" onclick="toggleExpl('xe${i}','${d.question_id}',this)">Объяснение</button>
           <div id="xe${i}" style="display:none"></div>
         </div>
       `).join('')}
@@ -627,22 +627,29 @@ function showExamResult(result) {
     <button class="btn btn-primary" onclick="showHome()">На главную</button>
     <button class="btn btn-secondary" onclick="S.exam.sessionId=null;S.exam.questions=[];S.exam.answers={};S.exam.finished=false;showExamSetup()">Повторить</button>
   `);
+
+  /* Animate percentage counter */
+  let cur = 0;
+  const target = pct;
+  const step = () => {
+    cur = Math.min(cur + Math.ceil(target / 30), target);
+    const el = document.getElementById('rpct');
+    if (el) el.textContent = cur + '%';
+    if (cur < target) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 async function toggleExpl(elId, qid, btn) {
-  const el = document.getElementById(elId);
-  if (!el) return;
+  const el = document.getElementById(elId); if (!el) return;
   if (el.style.display !== 'none') { el.style.display = 'none'; btn.textContent = 'Объяснение'; return; }
-  el.style.display = 'block';
-  btn.textContent = 'Скрыть';
+  el.style.display = 'block'; btn.textContent = 'Скрыть';
   if (el.innerHTML) return;
-  el.innerHTML = `<div class="expl-loading"><div class="spinner"></div>Загружаем…</div>`;
+  el.innerHTML = `<div class="expl-loading"><div class="spinner sm"></div>Загружаем…</div>`;
   try {
     const res = await api(`/explanation/${qid}`);
     el.innerHTML = `<div class="expl-box">${esc(res.text)}</div>`;
-  } catch (_) {
-    el.innerHTML = `<div style="color:var(--hint);font-size:13px">Объяснение недоступно</div>`;
-  }
+  } catch (_) { el.innerHTML = `<div style="color:var(--hint);font-size:13px">Объяснение недоступно</div>`; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -656,17 +663,20 @@ async function showStats() {
 
   try {
     const stats = await api('/stats');
-    const today = stats.today || {};
-    const topics = stats.topics || [];
+    const today = stats.today || {}; const topics = stats.topics || [];
+    const accTotal = stats.total || 0; const accCorr = stats.correct || 0;
+    const accPct = accTotal > 0 ? Math.round(accCorr/accTotal*100) : 0;
 
-    const sc = APP.querySelector('.screen');
-    if (!sc) return;
-
-    const accTotal = stats.total || 0;
-    const accCorr  = stats.correct || 0;
-    const accPct   = accTotal > 0 ? Math.round(accCorr/accTotal*100) : 0;
-
+    const sc = APP.querySelector('.screen'); if (!sc) return;
     sc.innerHTML = `
+      <div class="hero" style="padding:14px 16px">
+        ${avatarHtml(44)}
+        <div class="hero-info">
+          <div class="hero-greet">Моя статистика</div>
+          <div class="hero-name" style="font-size:17px">${esc(DISPLAY)}</div>
+        </div>
+      </div>
+
       <div class="stats-row">
         <div class="stat"><div class="stat-val">${accTotal}</div><div class="stat-lbl">Всего</div></div>
         <div class="stat"><div class="stat-val">${accPct}%</div><div class="stat-lbl">Точность</div></div>
@@ -674,39 +684,40 @@ async function showStats() {
       </div>
 
       <div class="card">
-        <div class="opt-label" style="margin-bottom:8px">Сегодня</div>
+        <div class="opt-label" style="margin-bottom:10px">Сегодня</div>
         <div class="kv-list">
           <div class="kv-row"><span>Ответов</span><span class="kv-val">${today.total||0}</span></div>
           <div class="kv-row"><span>Правильных</span><span class="kv-val kv-green">${today.correct||0}</span></div>
+          ${today.total > 0 ? `<div class="kv-row"><span>Точность</span><span class="kv-val">${Math.round((today.correct||0)/(today.total)*100)}%</span></div>` : ''}
         </div>
       </div>
 
       ${topics.length > 0 ? `
         <div class="card">
-          <div class="opt-label" style="margin-bottom:12px">По темам</div>
+          <div class="opt-label" style="margin-bottom:14px">По темам</div>
           ${topics.map(t => {
             const p = t.total > 0 ? Math.round(t.correct/t.total*100) : 0;
             const barColor = p >= 75 ? 'var(--green)' : p >= 50 ? 'var(--orange)' : 'var(--red)';
             return `
               <div class="topic-bar-wrap">
                 <div class="topic-bar-head">
-                  <span style="font-size:14px">${esc(t.topic)}</span>
-                  <span style="font-weight:700;font-size:14px">${p}%</span>
+                  <span>${esc(t.topic)}</span>
+                  <span style="font-weight:700;color:${barColor}">${p}%</span>
                 </div>
                 <div class="prog-bar"><div class="prog-fill" style="width:${p}%;background:${barColor}"></div></div>
-                <div style="font-size:12px;color:var(--hint);margin-top:2px">${t.correct}/${t.total} правильно</div>
+                <div style="font-size:12px;color:var(--hint);margin-top:3px">${t.correct}/${t.total} правильно</div>
               </div>
             `;
           }).join('')}
         </div>
-      ` : ''}
+      ` : `<div class="card" style="text-align:center;color:var(--hint);padding:20px">Начни тренировку, чтобы увидеть статистику!</div>`}
 
       <button class="btn btn-secondary" onclick="showHome()">На главную</button>
     `;
   } catch (_) {
     const sc = APP.querySelector('.screen');
     if (sc) sc.innerHTML = `
-      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки статистики</div>
+      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>
       <button class="btn btn-secondary" onclick="showHome()">На главную</button>
     `;
   }
@@ -717,15 +728,15 @@ async function showStats() {
 ══════════════════════════════════════════════════════════════════════ */
 (async function init() {
   try {
-    await api('/topics'); // also creates user record via auth middleware
+    await api('/topics');
     showHome();
   } catch (_) {
     setApp(`
       <div class="screen" style="align-items:center;justify-content:center;min-height:100vh;text-align:center">
         <div style="font-size:52px">⚠️</div>
-        <div style="font-size:18px;font-weight:700;margin-top:12px">Ошибка подключения</div>
+        <div style="font-size:18px;font-weight:800;margin-top:12px">Ошибка подключения</div>
         <div style="color:var(--hint);margin-top:8px;font-size:14px">
-          Откройте приложение через Telegram<br>или проверьте настройки сервера
+          Откройте приложение через Telegram<br>или проверьте соединение с сервером
         </div>
         <button class="btn btn-secondary" style="margin-top:20px" onclick="location.reload()">Перезагрузить</button>
       </div>
