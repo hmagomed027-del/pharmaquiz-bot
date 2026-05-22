@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS questions (
     option_b        TEXT NOT NULL,
     option_c        TEXT NOT NULL,
     option_d        TEXT NOT NULL,
-    correct_answer  TEXT NOT NULL CHECK(correct_answer IN ('A','B','C','D')),
+    correct_answer  TEXT NOT NULL,
     drug_name       TEXT,
     difficulty      INTEGER NOT NULL DEFAULT 1 CHECK(difficulty IN (1,2,3)),
     tags            TEXT,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS training_answers (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id         INTEGER NOT NULL REFERENCES users(telegram_id),
     question_id     TEXT NOT NULL REFERENCES questions(id),
-    chosen_answer   TEXT NOT NULL CHECK(chosen_answer IN ('A','B','C','D')),
+    chosen_answer   TEXT NOT NULL,
     is_correct      INTEGER NOT NULL CHECK(is_correct IN (0,1)),
     answered_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS exam_answers (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id      INTEGER NOT NULL REFERENCES exam_sessions(id),
     question_id     TEXT NOT NULL REFERENCES questions(id),
-    chosen_answer   TEXT CHECK(chosen_answer IN ('A','B','C','D')),
+    chosen_answer   TEXT,
     is_correct      INTEGER NOT NULL DEFAULT 0 CHECK(is_correct IN (0,1)),
     is_skipped      INTEGER NOT NULL DEFAULT 0 CHECK(is_skipped IN (0,1)),
     question_order  INTEGER NOT NULL

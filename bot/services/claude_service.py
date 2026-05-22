@@ -27,23 +27,25 @@ def _get_client() -> genai.Client:
 
 def _build_prompt(q) -> str:
     opts = {"A": q["option_a"], "B": q["option_b"], "C": q["option_c"], "D": q["option_d"]}
-    correct_letter = q["correct_answer"]
-    correct_text = opts[correct_letter]
+    correct_letters = [l.strip() for l in q["correct_answer"].split(",")]
+    correct_texts = [f"{l}) {opts[l]}" for l in correct_letters if l in opts]
+    correct_str = ", ".join(correct_texts)
     wrong_lines = "\n".join(
         f"{letter}) {text}"
         for letter, text in opts.items()
-        if letter != correct_letter
+        if letter not in correct_letters
     )
+    multi_note = " (несколько правильных ответов)" if len(correct_letters) > 1 else ""
     return f"""Вопрос по фармакологии:
 Тема: {q['topic']} — {q.get('subtopic', '')}
-Вопрос: {q['question']}
+Вопрос: {q['question']}{multi_note}
 
 Варианты: A) {opts['A']}  B) {opts['B']}  C) {opts['C']}  D) {opts['D']}
-Правильный ответ: {correct_letter}) {correct_text}
+Правильный ответ: {correct_str}
 
 Дай объяснение строго в таком формате (только текст, без Markdown):
 
-✅ ПРАВИЛЬНЫЙ ОТВЕТ: {correct_letter}) {correct_text}
+✅ ПРАВИЛЬНЫЙ ОТВЕТ: {correct_str}
 [2-3 предложения: механизм действия, фармакокинетика, применение]
 
 ❌ НЕПРАВИЛЬНЫЕ ОТВЕТЫ:
@@ -86,9 +88,10 @@ async def get_explanation(question) -> str:
 def _fallback(question) -> str:
     opts = {"A": question["option_a"], "B": question["option_b"],
             "C": question["option_c"], "D": question["option_d"]}
-    correct = question["correct_answer"]
+    correct_letters = [l.strip() for l in question["correct_answer"].split(",")]
+    correct_str = ", ".join(f"{l}) {opts[l]}" for l in correct_letters if l in opts)
     return (
-        f"✅ ПРАВИЛЬНЫЙ ОТВЕТ: {correct}) {opts[correct]}\n\n"
+        f"✅ ПРАВИЛЬНЫЙ ОТВЕТ: {correct_str}\n\n"
         "Подробное объяснение временно недоступно.\n\n"
         "💡 ЗАПОМНИ: Повторите этот раздел по учебнику для закрепления."
     )
