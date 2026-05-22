@@ -17,6 +17,7 @@ const S = {
   training: {
     topic: null, question: null, answeredIds: [],
     answered: false, todayTotal: 0, todayCorrect: 0,
+    history: [],
   },
   exam: {
     topic: null, count: 10, timeLimit: null,
@@ -376,6 +377,10 @@ async function submitTraining(chosen) {
     S.training.todayCorrect = res.today.correct;
     if (!S.training.answeredIds.includes(q.id)) S.training.answeredIds.push(q.id);
 
+    S.training.history.push({ q, chosen, res, expl: null });
+    if (S.training.history.length > 30) S.training.history.shift();
+    const hPos = S.training.history.length - 1;
+
     const rArea = document.getElementById('t-result');
     if (rArea) {
       rArea.innerHTML = `
@@ -390,11 +395,12 @@ async function submitTraining(chosen) {
         <div id="t-expl"></div>
 
         <button class="btn btn-primary" onclick="showTrainingQ()">Следующий вопрос →</button>
+        ${hPos > 0 ? `<button class="btn btn-secondary" onclick="showHistoryQ(${hPos - 1})">← Предыдущий вопрос</button>` : ''}
         <button class="btn btn-secondary" onclick="showTopicPick('training')">Сменить тему</button>
         <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>
       `;
       if (q.drug_name) loadImg(q.drug_name, 't-img');
-      loadExpl(q.id, 't-expl-load', 't-expl');
+      loadExplSaving(q.id, hPos, 't-expl-load', 't-expl');
     }
   } catch (_) { toast('Ошибка при отправке ответа'); }
 }
@@ -409,6 +415,77 @@ async function loadExpl(qid, loadId, areaId) {
     const el = document.getElementById(loadId);
     if (el) el.textContent = 'Объяснение временно недоступно.';
   }
+}
+
+async function loadExplSaving(qid, historyIdx, loadId, areaId) {
+  try {
+    const res = await api(`/explanation/${qid}`);
+    if (S.training.history[historyIdx]) S.training.history[historyIdx].expl = res.text;
+    document.getElementById(loadId)?.remove();
+    const el = document.getElementById(areaId);
+    if (el) el.innerHTML = `<div class="expl-box">${esc(res.text)}</div>`;
+  } catch (_) {
+    const el = document.getElementById(loadId);
+    if (el) el.textContent = 'Объяснение временно недоступно.';
+  }
+}
+
+function showHistoryQ(pos) {
+  const h = S.training.history;
+  if (pos < 0 || pos >= h.length) return;
+  const { q, chosen, res } = h[pos];
+  const multi = isMultiAnswer(q);
+  const correctSet = new Set(res.correct_answer.split(','));
+  const chosenSet  = new Set(chosen ? chosen.split(',') : []);
+  const ok = res.is_correct;
+  const isLast  = pos === h.length - 1;
+  const isFirst = pos === 0;
+
+  backBtn(true, () => showHistoryQ(pos + 1 < h.length ? pos + 1 : pos));
+
+  page(hdr(`${S.training.topic} — история`, () => showHistoryQ(isLast ? pos : h.length - 1)), `
+    <div style="text-align:center;font-size:12px;color:var(--hint);margin-bottom:10px">
+      Вопрос ${pos + 1} из ${h.length} пройденных
+    </div>
+
+    <div class="q-card">
+      <div class="q-meta">${esc(q.subtopic || q.topic)}</div>
+      <div class="q-text">${esc(q.question)}</div>
+      ${multi ? `<div style="font-size:12px;color:var(--hint);margin-top:6px">✏️ Несколько верных ответов</div>` : ''}
+    </div>
+
+    <div class="answers">
+      ${['A','B','C','D'].map(l => {
+        let cls = 'ans-btn disabled';
+        if (correctSet.has(l)) cls += ' correct';
+        else if (chosenSet.has(l)) cls += ' wrong';
+        return `<button class="${cls}"><div class="letter">${l}</div><div>${esc(q.options[l])}</div></button>`;
+      }).join('')}
+    </div>
+
+    <div class="result-badge ${ok ? 'ok' : 'bad'}">${ok ? '✅ Правильно!' : '❌ Неправильно'}</div>
+
+    ${q.drug_name ? `<div class="drug-img-wrap" id="h-img"><div class="expl-loading"><div class="spinner sm"></div>Ищем изображение…</div></div>` : ''}
+    <div class="expl-loading" id="h-expl-load"><div class="spinner sm"></div>Загружаем объяснение…</div>
+    <div id="h-expl"></div>
+
+    <div style="display:flex;gap:8px;margin-top:8px">
+      ${!isFirst ? `<button class="btn btn-secondary" style="flex:1" onclick="showHistoryQ(${pos - 1})">← Назад</button>` : ''}
+      ${!isLast  ? `<button class="btn btn-secondary" style="flex:1" onclick="showHistoryQ(${pos + 1})">Вперёд →</button>` : ''}
+    </div>
+    ${isLast ? `<button class="btn btn-primary" onclick="showTrainingQ()">Следующий вопрос →</button>` : ''}
+    <button class="btn btn-secondary" onclick="showTopicPick('training')">Сменить тему</button>
+    <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>
+  `);
+
+  if (h[pos].expl) {
+    document.getElementById('h-expl-load')?.remove();
+    const el = document.getElementById('h-expl');
+    if (el) el.innerHTML = `<div class="expl-box">${esc(h[pos].expl)}</div>`;
+  } else {
+    loadExplSaving(q.id, pos, 'h-expl-load', 'h-expl');
+  }
+  if (q.drug_name) loadImg(q.drug_name, 'h-img');
 }
 
 async function loadImg(drug, containerId) {
