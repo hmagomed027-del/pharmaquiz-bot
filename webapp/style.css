@@ -100,42 +100,136 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 /* ── Stats row ───────────────────────────────────────────────────────── */
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.stat { background: var(--bg2); border-radius: 12px; padding: 12px 8px; text-align: center; }
+.stat {
+  background: var(--bg2); border-radius: 14px; padding: 13px 8px; text-align: center;
+  border: 1.5px solid transparent;
+  position: relative; overflow: hidden;
+}
+.stat::after {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--green), var(--green2));
+  border-radius: 14px 14px 0 0;
+}
 .stat-val { font-size: 22px; font-weight: 800; color: var(--green); }
-.stat-lbl { font-size: 11px; color: var(--hint); margin-top: 2px; }
+.stat-lbl { font-size: 11px; color: var(--hint); margin-top: 3px; font-weight: 500; }
 
 /* ── Menu grid ───────────────────────────────────────────────────────── */
 .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .menu-card {
-  background: var(--bg2); border-radius: var(--r);
-  padding: 16px 14px; text-align: left;
-  display: flex; flex-direction: column; gap: 6px;
-  transition: transform .12s, box-shadow .12s;
+  border-radius: var(--r);
+  padding: 18px 16px; text-align: left;
+  display: flex; flex-direction: column; gap: 0;
+  transition: transform .13s, box-shadow .13s;
   box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
 }
-.menu-card:active { transform: scale(.97); box-shadow: none; }
-.menu-card.full { grid-column: span 2; background: linear-gradient(135deg,#2D6A4F,#40916C); }
-.menu-card.full .menu-title,
-.menu-card.full .menu-sub { color: #fff; }
-.menu-icon  { font-size: 30px; }
-.menu-title { font-size: 14px; font-weight: 700; color: var(--text); }
-.menu-sub   { font-size: 12px; color: var(--hint); }
+.menu-card:active { transform: scale(.965); box-shadow: none; }
+
+/* Training — green (full width) */
+.menu-card.full {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 45%, #40916C 100%);
+  flex-direction: row; align-items: center; gap: 16px; padding: 20px 18px;
+}
+.menu-card.full::after {
+  content: ''; position: absolute;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  top: -40px; right: -20px; pointer-events: none;
+}
+.menu-card.full::before {
+  content: ''; position: absolute;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  bottom: -25px; right: 55px; pointer-events: none;
+}
+.menu-card.full .menu-title { font-size: 17px; font-weight: 800; }
+.menu-card.full .menu-sub   { font-size: 12px; opacity: .82; }
+.menu-card.full .menu-body  { display: flex; flex-direction: column; gap: 3px; }
+
+/* Exam — blue */
+.menu-card.c-blue {
+  background: linear-gradient(135deg, #0D47A1 0%, #1976D2 55%, #42A5F5 100%);
+}
+.menu-card.c-blue::after {
+  content: ''; position: absolute;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(255,255,255,.07);
+  top: -28px; right: -18px; pointer-events: none;
+}
+
+/* Stats — purple */
+.menu-card.c-purple {
+  background: linear-gradient(135deg, #4A148C 0%, #7B1FA2 55%, #CE93D8 100%);
+}
+.menu-card.c-purple::after {
+  content: ''; position: absolute;
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(255,255,255,.07);
+  top: -28px; right: -18px; pointer-events: none;
+}
+
+/* Icon bubbles inside menu cards */
+.menu-icon-bubble {
+  width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin-bottom: 12px;
+  background: rgba(255,255,255,.18);
+  box-shadow: 0 2px 12px rgba(0,0,0,.15);
+  position: relative; z-index: 1;
+}
+.menu-card.full .menu-icon-bubble {
+  width: 58px; height: 58px; border-radius: 18px;
+  font-size: 30px; margin-bottom: 0;
+  background: rgba(255,255,255,.2);
+  box-shadow: 0 4px 18px rgba(0,0,0,.18);
+}
+
+.menu-title {
+  font-size: 14px; font-weight: 700; color: #fff;
+  position: relative; z-index: 1;
+}
+.menu-sub {
+  font-size: 11px; color: rgba(255,255,255,.78);
+  margin-top: 3px; line-height: 1.4;
+  position: relative; z-index: 1;
+}
 
 /* ── Topic list ──────────────────────────────────────────────────────── */
-.topic-list { display: flex; flex-direction: column; gap: 8px; }
+.topic-list { display: flex; flex-direction: column; gap: 9px; }
 .topic-item {
   background: var(--bg2); border-radius: var(--r);
-  padding: 14px; display: flex; align-items: center; gap: 14px;
+  padding: 13px 14px; display: flex; align-items: center; gap: 13px;
   box-shadow: var(--shadow);
-  transition: transform .1s;
+  transition: transform .1s, box-shadow .1s;
+  border: 1.5px solid transparent;
 }
-.topic-item:active { transform: scale(.98); }
-.topic-icon { font-size: 28px; width: 42px; text-align: center; }
+.topic-item:active { transform: scale(.978); box-shadow: none; }
+
+.topic-icon-bubble {
+  width: 50px; height: 50px; border-radius: 15px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.10);
+}
+
 .topic-info { flex: 1; }
-.topic-name { font-size: 15px; font-weight: 600; }
+.topic-name { font-size: 15px; font-weight: 700; }
 .topic-cnt  { font-size: 12px; color: var(--hint); margin-top: 2px; }
-.topic-pct  { font-size: 12px; font-weight: 700; color: var(--green2); margin-top: 2px; }
-.topic-arr  { color: var(--hint); font-size: 20px; }
+
+.topic-pct-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  margin-top: 5px;
+}
+
+.topic-arr {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+  color: var(--hint); font-size: 16px; font-weight: 700; flex-shrink: 0;
+}
 
 /* ── Progress ────────────────────────────────────────────────────────── */
 .prog-wrap  { display: flex; flex-direction: column; gap: 5px; }
@@ -260,7 +354,12 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
   font-size: 14px; font-weight: 500; color: var(--text);
   transition: all .12s;
 }
-.chip.on { border-color: var(--green); background: rgba(45,106,79,.12); color: var(--green); font-weight: 700; }
+.chip.on {
+  border-color: var(--green);
+  background: linear-gradient(135deg, rgba(45,106,79,.14), rgba(82,183,136,.10));
+  color: var(--green); font-weight: 700;
+  box-shadow: 0 2px 8px rgba(45,106,79,.15);
+}
 .chip:active { transform: scale(.96); }
 .opt-label { font-size: 12px; font-weight: 700; color: var(--hint); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
 
@@ -335,10 +434,18 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 /* ── Motivational banner ─────────────────────────────────────────────── */
 .motto {
-  background: linear-gradient(135deg, rgba(45,106,79,.08), rgba(82,183,136,.08));
-  border-radius: var(--r-sm);
-  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(45,106,79,.08), rgba(82,183,136,.06));
+  border-radius: var(--r);
+  padding: 11px 16px;
   font-size: 13px; color: var(--green);
-  font-style: italic;
+  font-style: italic; line-height: 1.5;
   border-left: 3px solid var(--green2);
+  display: flex; align-items: center; gap: 10px;
 }
+.motto::before {
+  content: '💬';
+  font-size: 18px; font-style: normal; flex-shrink: 0;
+}
+
+/* ── Exam setup chips ────────────────────────────────────────────────── */
+.chip-group.col { flex-direction: column; align-items: flex-start; }

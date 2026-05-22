@@ -153,17 +153,19 @@ async function showHome() {
 
     <div class="menu-grid">
       <button class="menu-card full" onclick="showTopicPick('training')">
-        <div class="menu-icon">📖</div>
-        <div class="menu-title">Тренировка</div>
-        <div class="menu-sub">Вопрос за вопросом с объяснениями и картинками</div>
+        <div class="menu-icon-bubble">📖</div>
+        <div class="menu-body">
+          <div class="menu-title">Тренировка</div>
+          <div class="menu-sub">Вопрос за вопросом с объяснениями</div>
+        </div>
       </button>
-      <button class="menu-card" onclick="showExamSetup()">
-        <div class="menu-icon">📝</div>
+      <button class="menu-card c-blue" onclick="showExamSetup()">
+        <div class="menu-icon-bubble">🎯</div>
         <div class="menu-title">Экзамен</div>
         <div class="menu-sub">С таймером и разбором ошибок</div>
       </button>
-      <button class="menu-card" onclick="showStats()">
-        <div class="menu-icon">📊</div>
+      <button class="menu-card c-purple" onclick="showStats()">
+        <div class="menu-icon-bubble">📈</div>
         <div class="menu-title">Статистика</div>
         <div class="menu-sub">Мой прогресс по темам</div>
       </button>
@@ -217,16 +219,23 @@ async function showTopicPick(mode) {
     if (!list) return;
     list.innerHTML = topics.map(t => {
       const ts = topicStats[t.topic];
-      const pctLine = ts && ts.total > 0
-        ? `<div class="topic-pct">✅ ${Math.round(ts.correct/ts.total*100)}% верных</div>`
+      const pct = ts && ts.total > 0 ? Math.round(ts.correct / ts.total * 100) : null;
+      const pctColor = pct === null ? '' : pct >= 75 ? '#2D6A4F' : pct >= 50 ? '#e67e22' : '#d62828';
+      const pctBadge = pct !== null
+        ? `<div class="topic-pct-badge" style="background:${pctColor}18;color:${pctColor}">
+             <span>${pct >= 75 ? '✅' : pct >= 50 ? '📈' : '📉'}</span>${pct}% верных
+           </div>`
         : '';
+      const col = t.color || '#95A5A6';
       return `
         <button class="topic-item" onclick="onTopicPick('${mode}','${t.topic.replace(/'/g,"\\'")}')">
-          <div class="topic-icon">${t.icon}</div>
+          <div class="topic-icon-bubble" style="background:${col}20;border:1.5px solid ${col}38">
+            ${t.icon}
+          </div>
           <div class="topic-info">
             <div class="topic-name">${esc(t.topic)}</div>
             <div class="topic-cnt">${t.count} вопросов</div>
-            ${pctLine}
+            ${pctBadge}
           </div>
           <div class="topic-arr">›</div>
         </button>

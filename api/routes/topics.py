@@ -8,13 +8,13 @@ from bot.database import queries
 router = APIRouter()
 
 TOPIC_META = {
-    "ПНС":                    {"icon": "🧠", "color": "#4A90D9"},
-    "ЦНС":                    {"icon": "⚡", "color": "#9B59B6"},
+    "ПНС":                    {"icon": "⚡", "color": "#4A90D9"},
+    "ЦНС":                    {"icon": "🧠", "color": "#9B59B6"},
     "ССС":                    {"icon": "❤️", "color": "#E74C3C"},
     "Дыхательная система":    {"icon": "🫁", "color": "#2ECC71"},
-    "Пищеварительная система": {"icon": "🍏", "color": "#F39C12"},
-    "Химиотерапия":           {"icon": "💊", "color": "#1ABC9C"},
-    "Рецептура":              {"icon": "📋", "color": "#E67E22"},
+    "Пищеварительная система": {"icon": "🫙", "color": "#F39C12"},
+    "Химиотерапия":           {"icon": "⚗️", "color": "#1ABC9C"},
+    "Рецептура":              {"icon": "✍️", "color": "#E67E22"},
 }
 
 
