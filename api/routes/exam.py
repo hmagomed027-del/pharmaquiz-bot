@@ -71,9 +71,7 @@ def _answers_match(chosen: Optional[str], correct: str) -> bool:
 async def finish_exam(body: ExamFinishRequest, user_id: int = Depends(get_user_id)):
     db = await get_db()
     session = await queries.get_exam_session(db, body.session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    if session["user_id"] != user_id:
+    if session and session["user_id"] != user_id:
         raise HTTPException(status_code=403, detail="Not your session")
 
     correct_count = 0
@@ -107,9 +105,10 @@ async def finish_exam(body: ExamFinishRequest, user_id: int = Depends(get_user_i
             "drug_name": q_row["drug_name"],
         })
 
-    await queries.finish_exam_session(
-        db, body.session_id, correct_count, "completed", body.elapsed_seconds,
-    )
+    if session:
+        await queries.finish_exam_session(
+            db, body.session_id, correct_count, "completed", body.elapsed_seconds,
+        )
 
     total = len(body.answers)
     pct = round(correct_count / total * 100) if total > 0 else 0

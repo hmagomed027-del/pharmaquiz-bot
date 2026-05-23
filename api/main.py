@@ -5,8 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, Response
 
 from bot.config import config
 from bot.database.db import close_db, get_db, init_db
@@ -48,15 +47,26 @@ app.include_router(training.router, prefix="/api")
 app.include_router(exam.router, prefix="/api")
 app.include_router(image.router, prefix="/api")
 
-if WEBAPP_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(WEBAPP_DIR)), name="static")
+
+@app.get("/static/app.js", include_in_schema=False)
+async def serve_js():
+    path = WEBAPP_DIR / "app.js"
+    content = path.read_bytes()
+    return Response(content, media_type="application/javascript; charset=utf-8")
+
+
+@app.get("/static/style.css", include_in_schema=False)
+async def serve_css():
+    path = WEBAPP_DIR / "style.css"
+    content = path.read_bytes()
+    return Response(content, media_type="text/css; charset=utf-8")
 
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return FileResponse(str(WEBAPP_DIR / "index.html"))
+    return FileResponse(str(WEBAPP_DIR / "index.html"), media_type="text/html")
 
 
 @app.get("/{path:path}", include_in_schema=False)
 async def spa_fallback(path: str):
-    return FileResponse(str(WEBAPP_DIR / "index.html"))
+    return FileResponse(str(WEBAPP_DIR / "index.html"), media_type="text/html")
