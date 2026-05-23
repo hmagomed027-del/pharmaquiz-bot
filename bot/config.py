@@ -35,7 +35,7 @@ def load_settings() -> Settings:
         admin_ids=_parse_admin_ids(os.getenv("ADMIN_IDS")),
         database_path=os.getenv("DATABASE_PATH", "bot.db"),
         images_dir=os.getenv("IMAGES_DIR", "data/images"),
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
         max_exam_questions=int(os.getenv("MAX_EXAM_QUESTIONS", "30")),
         throttle_rate=float(os.getenv("THROTTLE_RATE", "0.5")),
         webapp_url=os.getenv("WEBAPP_URL", ""),
