@@ -303,14 +303,16 @@ function shuffleQuestion(q) {
   const shuffled = [...letters].sort(() => Math.random() - 0.5);
   const oldOpts = q.options;
   const newOpts = {};
-  const remap = {};
+  const remap = {};   // oldL → newL
+  const unmap = {};   // newL → oldL (reverse, for sending to server)
   shuffled.forEach((oldL, i) => {
     const newL = letters[i];
     newOpts[newL] = oldOpts[oldL];
     remap[oldL] = newL;
+    unmap[newL] = oldL;
   });
   const correctLetters = q.correct_answer.split(',').map(l => remap[l.trim()]);
-  return { ...q, options: newOpts, correct_answer: correctLetters.join(',') };
+  return { ...q, options: newOpts, correct_answer: correctLetters.join(','), _unmap: unmap };
 }
 
 function renderTrainingQ(q) {
@@ -693,17 +695,49 @@ function tickTimer() {
   } else { el.textContent = `⏱ ${fmt(elapsed)}`; }
 }
 
+function _calcLocalResult(elapsed) {
+  const questions = S.exam.questions;
+  let correct = 0;
+  const details = questions.map(q => {
+    const ans = S.exam.answers[q.id];
+    const chosen = ans?.chosen ?? null;
+    const isSkipped = ans?.is_skipped ?? false;
+    let isCorrect = false;
+    if (!isSkipped && chosen) {
+      const chosenSet  = new Set(chosen.split(',').map(s => s.trim()));
+      const correctSet = new Set(q.correct_answer.split(',').map(s => s.trim()));
+      isCorrect = chosenSet.size === correctSet.size && [...chosenSet].every(l => correctSet.has(l));
+    }
+    if (isCorrect) correct++;
+    return {
+      question_id: q.id, question: q.question, options: q.options,
+      correct_answer: q.correct_answer, chosen_answer: chosen,
+      is_correct: isCorrect, is_skipped: isSkipped, drug_name: q.drug_name,
+    };
+  });
+  const total = questions.length;
+  return { session_id: S.exam.sessionId, correct, total,
+    percent: total > 0 ? Math.round(correct / total * 100) : 0,
+    elapsed_seconds: elapsed, details };
+}
+
 async function finishExam() {
   if (S.exam.finished) return;
   S.exam.finished = true; clearInterval(S.exam.timerIv); backBtn(false);
   setApp(`<div class="loading-screen"><div class="spinner"></div><p>Подводим итоги…</p></div>`);
 
   const elapsed = Math.floor((Date.now() - S.exam.startTime) / 1000);
-  const answers = S.exam.questions.map(q => ({
-    question_id: q.id,
-    chosen_answer: S.exam.answers[q.id]?.chosen ?? null,
-    is_skipped: S.exam.answers[q.id]?.is_skipped ?? false,
-  }));
+
+  // Convert shuffled letters back to original DB letters before sending to server
+  const answers = S.exam.questions.map(q => {
+    const chosen   = S.exam.answers[q.id]?.chosen ?? null;
+    const isSkipped = S.exam.answers[q.id]?.is_skipped ?? false;
+    let originalChosen = chosen;
+    if (chosen && q._unmap) {
+      originalChosen = chosen.split(',').map(l => q._unmap[l.trim()] || l).join(',');
+    }
+    return { question_id: q.id, chosen_answer: originalChosen, is_skipped: isSkipped };
+  });
 
   try {
     const result = await api('/exam/finish', {
@@ -711,10 +745,8 @@ async function finishExam() {
     });
     showExamResult(result);
   } catch (_) {
-    setApp(`<div class="screen">
-      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка при завершении</div>
-      <button class="btn btn-secondary" onclick="showHome()">На главную</button>
-    </div>`);
+    // Server unavailable (e.g. Render sleep) — show result calculated locally
+    showExamResult(_calcLocalResult(elapsed));
   }
 }
 
