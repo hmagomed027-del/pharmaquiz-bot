@@ -251,8 +251,13 @@ async function showTopicPick(mode) {
 
 function onTopicPick(mode, topic) {
   haptic('sel');
-  if (mode === 'training') { S.training.topic = topic; S.training.answeredIds = []; showTrainingQ(); }
-  else { S.exam.topic = topic; showExamSetup(); }
+  if (mode === 'training') {
+    S.training.topic = topic;
+    // Restore seen IDs from localStorage so questions don't repeat across sessions
+    S.training.answeredIds = _lsGet(`train_${topic}`).slice(-100);
+    S.training.history = [];
+    showTrainingQ();
+  } else { S.exam.topic = topic; showExamSetup(); }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -303,8 +308,8 @@ function shuffleQuestion(q) {
   const shuffled = [...letters].sort(() => Math.random() - 0.5);
   const oldOpts = q.options;
   const newOpts = {};
-  const remap = {};   // oldL → newL
-  const unmap = {};   // newL → oldL (reverse, for sending to server)
+  const remap = {};   // oldL → newL  (for converting DB correct_answer to display position)
+  const unmap = {};   // newL → oldL  (for converting chosen display letter back to DB letter)
   shuffled.forEach((oldL, i) => {
     const newL = letters[i];
     newOpts[newL] = oldOpts[oldL];
@@ -312,7 +317,15 @@ function shuffleQuestion(q) {
     unmap[newL] = oldL;
   });
   const correctLetters = q.correct_answer.split(',').map(l => remap[l.trim()]);
-  return { ...q, options: newOpts, correct_answer: correctLetters.join(','), _unmap: unmap };
+  return { ...q, options: newOpts, correct_answer: correctLetters.join(','), _remap: remap, _unmap: unmap };
+}
+
+/* localStorage helpers — survive page reload */
+function _lsGet(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { return []; }
+}
+function _lsSet(key, arr) {
+  try { localStorage.setItem(key, JSON.stringify(arr)); } catch (_) {}
 }
 
 function renderTrainingQ(q) {
@@ -376,10 +389,16 @@ async function submitTraining(chosen) {
   if (chk) { chk.disabled = true; chk.style.opacity = '.45'; }
   haptic('light');
 
+  // Convert shuffled display letters back to original DB letters before sending
+  let originalChosen = chosen;
+  if (chosen && q._unmap) {
+    originalChosen = chosen.split(',').map(l => q._unmap[l.trim()] || l).join(',');
+  }
+
   try {
-    const res = await api('/training/answer', { method:'POST', body:{ question_id:q.id, chosen_answer:chosen } });
-    const correct = res.correct_answer;
-    const correctSet = new Set(correct.split(','));
+    const res = await api('/training/answer', { method:'POST', body:{ question_id:q.id, chosen_answer:originalChosen } });
+    // Server returns correct_answer in original letter space → remap to shuffled display positions
+    const correctSet = new Set(res.correct_answer.split(',').map(l => q._remap?.[l.trim()] || l));
     const chosenSet  = new Set(chosen.split(','));
     const ok = res.is_correct;
 
@@ -392,7 +411,10 @@ async function submitTraining(chosen) {
     haptic(ok ? 'ok' : 'err');
     S.training.todayTotal   = res.today.total;
     S.training.todayCorrect = res.today.correct;
-    if (!S.training.answeredIds.includes(q.id)) S.training.answeredIds.push(q.id);
+    if (!S.training.answeredIds.includes(q.id)) {
+      S.training.answeredIds.push(q.id);
+      _lsSet(`train_${S.training.topic}`, S.training.answeredIds.slice(-100));
+    }
 
     S.training.history.push({ q, chosen, res, expl: null });
     if (S.training.history.length > 30) S.training.history.shift();
@@ -452,7 +474,8 @@ function showHistoryQ(pos) {
   if (pos < 0 || pos >= h.length) return;
   const { q, chosen, res } = h[pos];
   const multi = isMultiAnswer(q);
-  const correctSet = new Set(res.correct_answer.split(','));
+  // res.correct_answer is in original DB letters; remap to shuffled display positions
+  const correctSet = new Set(res.correct_answer.split(',').map(l => q._remap?.[l.trim()] || l));
   const chosenSet  = new Set(chosen ? chosen.split(',') : []);
   const ok = res.is_correct;
   const isLast  = pos === h.length - 1;
@@ -575,9 +598,11 @@ async function startExam() {
   setApp(`<div class="loading-screen"><div class="spinner"></div><p>Подготавливаем экзамен…</p></div>`);
 
   try {
+    // Load previously seen question IDs so the server picks different ones
+    const seenIds = _lsGet(`exam_${S.exam.topic}`);
     const res = await api('/exam/start', {
       method:'POST',
-      body:{ topic:S.exam.topic, count:S.exam.count, time_limit_seconds:S.exam.timeLimit },
+      body:{ topic:S.exam.topic, count:S.exam.count, time_limit_seconds:S.exam.timeLimit, exclude_ids: seenIds },
     });
     Object.assign(S.exam, {
       sessionId:res.session_id, questions:res.questions.map(shuffleQuestion),
@@ -727,6 +752,12 @@ async function finishExam() {
   setApp(`<div class="loading-screen"><div class="spinner"></div><p>Подводим итоги…</p></div>`);
 
   const elapsed = Math.floor((Date.now() - S.exam.startTime) / 1000);
+
+  // Save question IDs so next exam avoids repeating them
+  const seenKey = `exam_${S.exam.topic}`;
+  const prevSeen = _lsGet(seenKey);
+  const nowSeen = S.exam.questions.map(q => q.id);
+  _lsSet(seenKey, [...new Set([...prevSeen, ...nowSeen])].slice(-200));
 
   // Convert shuffled letters back to original DB letters before sending to server
   const answers = S.exam.questions.map(q => {

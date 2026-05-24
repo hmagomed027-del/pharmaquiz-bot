@@ -14,6 +14,7 @@ class ExamStartRequest(BaseModel):
     topic: str
     count: int
     time_limit_seconds: Optional[int] = None
+    exclude_ids: list[str] = []
 
 
 class ExamAnswer(BaseModel):
@@ -44,7 +45,7 @@ async def start_exam(body: ExamStartRequest, user_id: int = Depends(get_user_id)
         body.time_limit_seconds, time_choice,
     )
 
-    rows = await queries.get_random_questions(db, body.topic, body.count)
+    rows = await queries.get_random_questions(db, body.topic, body.count, body.exclude_ids or None)
     questions = [
         {
             "id": q["id"],
