@@ -285,8 +285,8 @@ async function showTrainingQ() {
       `;
       return;
     }
-    S.training.question = q;
-    renderTrainingQ(q);
+    S.training.question = shuffleQuestion(q);
+    renderTrainingQ(S.training.question);
   } catch (_) {
     const sc = APP.querySelector('.screen');
     if (sc) sc.innerHTML = `
@@ -297,6 +297,21 @@ async function showTrainingQ() {
 }
 
 function isMultiAnswer(q) { return q.correct_answer && q.correct_answer.includes(','); }
+
+function shuffleQuestion(q) {
+  const letters = ['A', 'B', 'C', 'D'];
+  const shuffled = [...letters].sort(() => Math.random() - 0.5);
+  const oldOpts = q.options;
+  const newOpts = {};
+  const remap = {};
+  shuffled.forEach((oldL, i) => {
+    const newL = letters[i];
+    newOpts[newL] = oldOpts[oldL];
+    remap[oldL] = newL;
+  });
+  const correctLetters = q.correct_answer.split(',').map(l => remap[l.trim()]);
+  return { ...q, options: newOpts, correct_answer: correctLetters.join(',') };
+}
 
 function renderTrainingQ(q) {
   const sc = APP.querySelector('.screen'); if (!sc) return;
@@ -563,7 +578,7 @@ async function startExam() {
       body:{ topic:S.exam.topic, count:S.exam.count, time_limit_seconds:S.exam.timeLimit },
     });
     Object.assign(S.exam, {
-      sessionId:res.session_id, questions:res.questions,
+      sessionId:res.session_id, questions:res.questions.map(shuffleQuestion),
       currentIndex:0, answers:{}, startTime:Date.now(),
       warnShown:false, finished:false,
     });
