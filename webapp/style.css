@@ -542,3 +542,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .cls-topic-info { flex: 1; }
 .cls-topic-name { font-size: 14px; font-weight: 700; }
 .cls-topic-cnt  { font-size: 11px; color: var(--hint); margin-top: 2px; }
+.cls-badge {
+  display: inline-block; border-radius: 10px;
+  padding: 2px 7px; font-size: 10px; font-weight: 700;
+}

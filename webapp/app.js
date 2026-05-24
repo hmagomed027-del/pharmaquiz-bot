@@ -963,36 +963,35 @@ async function showClassificationPick() {
     const topics = await api('/cls/topics');
     const list = document.getElementById('cls-list');
     if (!list) return;
-    list.innerHTML = topics.map(t => {
+    list.innerHTML = topics.map(function(t) {
       const col = t.color || '#95A5A6';
-      const total = t.mcq_count + t.sort_count;
-      const badges = [
-        t.mcq_count  > 0 ? `<span style="background:${col}18;color:${col};border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700">MCQ ${t.mcq_count}</span>` : '',
-        t.sort_count > 0 ? `<span style="background:#2C3E5018;color:#2C3E50;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700">Сорт. ${t.sort_count}</span>` : '',
-      ].filter(Boolean).join(' ');
-      return `
-        <button class="cls-topic-item" onclick="showClsModeSelect('${t.topic.replace(/'/g,"\\'")}',${t.mcq_count},${t.sort_count})">
-          <div class="cls-topic-icon" style="background:${col}20;border:1.5px solid ${col}38">${t.icon}</div>
-          <div class="cls-topic-info">
-            <div class="cls-topic-name">${esc(t.topic)}</div>
-            <div class="cls-topic-cnt" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${badges}</div>
-          </div>
-          <div class="topic-arr">›</div>
-        </button>`;
+      let badges = '';
+      if (t.mcq_count > 0)  badges += '<span class="cls-badge" style="background:' + col + '22;color:' + col + '">Тест ' + t.mcq_count + '</span> ';
+      if (t.sort_count > 0) badges += '<span class="cls-badge" style="background:rgba(0,131,143,.12);color:#006064">Сорт. ' + t.sort_count + '</span>';
+      const safeTopic = t.topic.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return '<button class="cls-topic-item" onclick="showClsModeSelect(\'' + safeTopic + '\',' + t.mcq_count + ',' + t.sort_count + ')">'
+        + '<div class="cls-topic-icon" style="background:' + col + '22;border:1.5px solid ' + col + '44">' + t.icon + '</div>'
+        + '<div class="cls-topic-info">'
+        + '<div class="cls-topic-name">' + esc(t.topic) + '</div>'
+        + '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">' + badges + '</div>'
+        + '</div>'
+        + '<div class="topic-arr">›</div>'
+        + '</button>';
     }).join('');
-  } catch (_) {
+  } catch (err) {
     const l = document.getElementById('cls-list');
-    if (l) l.innerHTML = `<div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>
-      <button class="btn btn-secondary" onclick="showClassificationPick()">Повторить</button>`;
+    if (l) l.innerHTML = '<div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>'
+      + '<button class="btn btn-secondary" onclick="showClassificationPick()">Повторить</button>';
   }
 }
 
 function showClsModeSelect(topic, mcqCount, sortCount) {
   haptic('sel');
   S.cls.topic = topic;
-  // If only one type exists, go straight to it
-  if (sortCount === 0) { S.cls.mode = 'mcq'; S.cls.answeredIds = []; startClsExercise(); return; }
-  if (mcqCount === 0)  { S.cls.mode = 'sorting'; S.cls.answeredIds = []; startClsExercise(); return; }
+  S.cls.mcqCount  = mcqCount;
+  S.cls.sortCount = sortCount;
+  if (sortCount === 0) { S.cls.mode = 'mcq';     S.cls.answeredIds = []; startClsExercise(); return; }
+  if (mcqCount  === 0) { S.cls.mode = 'sorting'; S.cls.answeredIds = []; startClsExercise(); return; }
 
   backBtn(true, showClassificationPick);
   page(hdr(topic, showClassificationPick), `
@@ -1002,7 +1001,7 @@ function showClsModeSelect(topic, mcqCount, sortCount) {
       <div class="menu-icon-bubble" style="font-size:28px">❓</div>
       <div class="menu-body">
         <div class="menu-title">Тест (4 варианта)</div>
-        <div class="menu-sub">Определи группу, поколение или механизм препарата — выбери из 4 ответов</div>
+        <div class="menu-sub">Определи группу, поколение или механизм — выбери из 4 ответов</div>
       </div>
     </button>
 
@@ -1010,7 +1009,7 @@ function showClsModeSelect(topic, mcqCount, sortCount) {
       <div class="menu-icon-bubble" style="font-size:28px">🗂️</div>
       <div class="menu-body">
         <div class="menu-title">Сортировка</div>
-        <div class="menu-sub">Отнеси каждый препарат к нужной категории — по одному карточкой</div>
+        <div class="menu-sub">Отнеси каждый препарат к нужной категории — по одному</div>
       </div>
     </button>
   `);
@@ -1023,20 +1022,21 @@ function pickClsMode(mode) {
   startClsExercise();
 }
 
+function _clsBack() {
+  showClsModeSelect(S.cls.topic, S.cls.mcqCount || 1, S.cls.sortCount || 1);
+}
+
 async function startClsExercise() {
-  if (S.cls.mode === 'mcq') {
-    await showClsMCQ();
-  } else {
-    await showClsSort();
-  }
+  if (S.cls.mode === 'mcq') await showClsMCQ();
+  else await showClsSort();
 }
 
 /* ─── MCQ mode ─────────────────────────────────────────────────────── */
 async function showClsMCQ() {
-  backBtn(true, () => showClsModeSelect(S.cls.topic, 1, 1));
+  backBtn(true, _clsBack);
   S.cls.answered = false;
 
-  page(hdr(S.cls.topic, () => showClsModeSelect(S.cls.topic, 1, 1)), `
+  page(hdr(S.cls.topic, _clsBack), `
     <div class="loading-screen" style="min-height:200px"><div class="spinner"></div><p>Загружаем вопрос…</p></div>
   `);
 
@@ -1092,34 +1092,30 @@ function submitClsMCQ(chosen) {
   const q = S.cls.exercise;
   ['A','B','C','D'].forEach(l => document.getElementById('c'+l)?.classList.add('disabled'));
 
-  const originalChosen = q._unmap ? (q._unmap[chosen] || chosen) : chosen;
-  const correctDisplay = q._remap ? (q._remap[q.correct_answer] || q.correct_answer) : q.correct_answer;
-  const ok = originalChosen === q.correct_answer;
-
+  // After shuffleQuestion(), q.correct_answer is already in shuffled display-letter space,
+  // and 'chosen' is also a display letter — compare directly.
+  const ok = chosen === q.correct_answer;
   haptic(ok ? 'ok' : 'err');
-
   document.getElementById('c' + chosen)?.classList.add(ok ? 'correct' : 'wrong');
-  if (!ok) document.getElementById('c' + correctDisplay)?.classList.add('correct');
+  if (!ok) document.getElementById('c' + q.correct_answer)?.classList.add('correct');
 
   if (!S.cls.answeredIds.includes(q.id)) S.cls.answeredIds.push(q.id);
 
   const rArea = document.getElementById('c-result');
-  if (rArea) {
-    rArea.innerHTML = `
-      <div class="result-badge ${ok ? 'ok' : 'bad'}">${ok ? '✅ Правильно!' : '❌ Неправильно'}</div>
-      ${q.explanation ? `<div class="expl-box">${esc(q.explanation)}</div>` : ''}
-      <button class="btn btn-primary" onclick="showClsMCQ()">Следующий →</button>
-      <button class="btn btn-secondary" onclick="pickClsMode('sorting')">Попробовать сортировку</button>
-      <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
-    `;
-  }
+  if (!rArea) return;
+  let html = '<div class="result-badge ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✅ Правильно!' : '❌ Неправильно') + '</div>';
+  if (q.explanation) html += '<div class="expl-box">' + esc(q.explanation) + '</div>';
+  html += '<button class="btn btn-primary" onclick="showClsMCQ()">Следующий →</button>';
+  if (S.cls.sortCount > 0) html += '<button class="btn btn-secondary" onclick="pickClsMode(\'sorting\')">Попробовать сортировку</button>';
+  html += '<button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>';
+  rArea.innerHTML = html;
 }
 
 /* ─── Sorting mode ──────────────────────────────────────────────────── */
 async function showClsSort() {
-  backBtn(true, () => showClsModeSelect(S.cls.topic, 1, 1));
+  backBtn(true, _clsBack);
 
-  page(hdr(S.cls.topic, () => showClsModeSelect(S.cls.topic, 1, 1)), `
+  page(hdr(S.cls.topic, _clsBack), `
     <div class="loading-screen" style="min-height:200px"><div class="spinner"></div><p>Загружаем упражнение…</p></div>
   `);
 

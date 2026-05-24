@@ -140,10 +140,7 @@ async def cls_question(
         and q.get("id") not in exclude_ids
     ]
     if not pool:
-        # If all seen, reset
-        pool = [q for q in _CLASSIFICATIONS if q.get("topic") == topic and q.get("type") == type]
-    if not pool:
-        return JSONResponse(content=None)
+        return JSONResponse(content=None)  # all seen — frontend shows "done"
 
     item = random.choice(pool)
 
