@@ -12,7 +12,7 @@ from bot.database.db import close_db, get_db, init_db
 from bot.services.question_loader import load_all_questions
 from bot.services.wikipedia_service import close_session
 
-from api.routes import exam, image, topics, training
+from api.routes import classifications, exam, image, topics, training
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ app.include_router(topics.router, prefix="/api")
 app.include_router(training.router, prefix="/api")
 app.include_router(exam.router, prefix="/api")
 app.include_router(image.router, prefix="/api")
+app.include_router(classifications.router, prefix="/api")
 
 
 @app.get("/static/app.js", include_in_schema=False)

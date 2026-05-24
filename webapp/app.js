@@ -25,6 +25,11 @@ const S = {
     answers: {}, startTime: null, timerIv: null,
     warnShown: false, finished: false,
   },
+  cls: {
+    topic: null, mode: 'mcq',
+    exercise: null, answered: false, answeredIds: [],
+    sortItems: [], sortIndex: 0, sortAnswers: {},
+  },
 };
 
 /* ── API ──────────────────────────────────────────────────────────────── */
@@ -169,6 +174,13 @@ async function showHome() {
         <div class="menu-icon-bubble">📈</div>
         <div class="menu-title">Статистика</div>
         <div class="menu-sub">Мой прогресс по темам</div>
+      </button>
+      <button class="menu-card c-teal" onclick="showClassificationPick()" style="grid-column:span 2">
+        <div class="menu-icon-bubble">📋</div>
+        <div class="menu-body">
+          <div class="menu-title">Классификации</div>
+          <div class="menu-sub">Запоминай препараты по группам, поколениям и механизмам</div>
+        </div>
       </button>
     </div>
   `);
@@ -930,6 +942,315 @@ async function showStats() {
       <button class="btn btn-secondary" onclick="showHome()">На главную</button>
     `;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CLASSIFICATIONS
+══════════════════════════════════════════════════════════════════════ */
+
+async function showClassificationPick() {
+  backBtn(true, showHome);
+  page(hdr('Классификации', () => showHome()), `
+    <div style="font-size:13px;color:var(--hint);margin-bottom:2px">
+      Выберите группу препаратов для изучения
+    </div>
+    <div class="topic-list" id="cls-list">
+      <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
+    </div>
+  `);
+
+  try {
+    const topics = await api('/cls/topics');
+    const list = document.getElementById('cls-list');
+    if (!list) return;
+    list.innerHTML = topics.map(t => {
+      const col = t.color || '#95A5A6';
+      const total = t.mcq_count + t.sort_count;
+      const badges = [
+        t.mcq_count  > 0 ? `<span style="background:${col}18;color:${col};border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700">MCQ ${t.mcq_count}</span>` : '',
+        t.sort_count > 0 ? `<span style="background:#2C3E5018;color:#2C3E50;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:700">Сорт. ${t.sort_count}</span>` : '',
+      ].filter(Boolean).join(' ');
+      return `
+        <button class="cls-topic-item" onclick="showClsModeSelect('${t.topic.replace(/'/g,"\\'")}',${t.mcq_count},${t.sort_count})">
+          <div class="cls-topic-icon" style="background:${col}20;border:1.5px solid ${col}38">${t.icon}</div>
+          <div class="cls-topic-info">
+            <div class="cls-topic-name">${esc(t.topic)}</div>
+            <div class="cls-topic-cnt" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${badges}</div>
+          </div>
+          <div class="topic-arr">›</div>
+        </button>`;
+    }).join('');
+  } catch (_) {
+    const l = document.getElementById('cls-list');
+    if (l) l.innerHTML = `<div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>
+      <button class="btn btn-secondary" onclick="showClassificationPick()">Повторить</button>`;
+  }
+}
+
+function showClsModeSelect(topic, mcqCount, sortCount) {
+  haptic('sel');
+  S.cls.topic = topic;
+  // If only one type exists, go straight to it
+  if (sortCount === 0) { S.cls.mode = 'mcq'; S.cls.answeredIds = []; startClsExercise(); return; }
+  if (mcqCount === 0)  { S.cls.mode = 'sorting'; S.cls.answeredIds = []; startClsExercise(); return; }
+
+  backBtn(true, showClassificationPick);
+  page(hdr(topic, showClassificationPick), `
+    <div style="font-size:14px;color:var(--hint);margin-bottom:4px">Выберите режим занятия</div>
+
+    <button class="menu-card full" style="background:linear-gradient(135deg,#1B4332,#2D6A4F,#40916C)" onclick="pickClsMode('mcq')">
+      <div class="menu-icon-bubble" style="font-size:28px">❓</div>
+      <div class="menu-body">
+        <div class="menu-title">Тест (4 варианта)</div>
+        <div class="menu-sub">Определи группу, поколение или механизм препарата — выбери из 4 ответов</div>
+      </div>
+    </button>
+
+    <button class="menu-card full" style="background:linear-gradient(135deg,#006064,#00838F,#26C6DA)" onclick="pickClsMode('sorting')">
+      <div class="menu-icon-bubble" style="font-size:28px">🗂️</div>
+      <div class="menu-body">
+        <div class="menu-title">Сортировка</div>
+        <div class="menu-sub">Отнеси каждый препарат к нужной категории — по одному карточкой</div>
+      </div>
+    </button>
+  `);
+}
+
+function pickClsMode(mode) {
+  haptic('sel');
+  S.cls.mode = mode;
+  S.cls.answeredIds = [];
+  startClsExercise();
+}
+
+async function startClsExercise() {
+  if (S.cls.mode === 'mcq') {
+    await showClsMCQ();
+  } else {
+    await showClsSort();
+  }
+}
+
+/* ─── MCQ mode ─────────────────────────────────────────────────────── */
+async function showClsMCQ() {
+  backBtn(true, () => showClsModeSelect(S.cls.topic, 1, 1));
+  S.cls.answered = false;
+
+  page(hdr(S.cls.topic, () => showClsModeSelect(S.cls.topic, 1, 1)), `
+    <div class="loading-screen" style="min-height:200px"><div class="spinner"></div><p>Загружаем вопрос…</p></div>
+  `);
+
+  try {
+    const excl = S.cls.answeredIds.slice(-30).join(',');
+    const q = await api(`/cls/question?topic=${encodeURIComponent(S.cls.topic)}&type=mcq&exclude=${excl}`);
+
+    if (!q || !q.id) {
+      APP.querySelector('.screen').innerHTML = `
+        <div style="text-align:center;padding:40px 0">
+          <div style="font-size:52px">🎉</div>
+          <div style="font-size:18px;font-weight:800;margin-top:12px">Все вопросы пройдены!</div>
+        </div>
+        <button class="btn btn-primary" onclick="S.cls.answeredIds=[];showClsMCQ()">Начать заново</button>
+        <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+        <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>`;
+      return;
+    }
+
+    S.cls.exercise = shuffleQuestion(q);
+    renderClsMCQ(S.cls.exercise);
+  } catch (_) {
+    const sc = APP.querySelector('.screen');
+    if (sc) sc.innerHTML = `
+      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>
+      <button class="btn btn-secondary" onclick="showClsMCQ()">Повторить</button>`;
+  }
+}
+
+function renderClsMCQ(q) {
+  const sc = APP.querySelector('.screen'); if (!sc) return;
+  sc.innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">${esc(q.category || q.topic)}</div>
+      <div class="q-text">${esc(q.question)}</div>
+    </div>
+
+    <div class="answers">
+      ${['A','B','C','D'].map(l => `
+        <button class="ans-btn" id="c${l}" onclick="submitClsMCQ('${l}')">
+          <div class="letter">${l}</div>
+          <div>${esc(q.options[l])}</div>
+        </button>`).join('')}
+    </div>
+
+    <div id="c-result"></div>
+  `;
+}
+
+function submitClsMCQ(chosen) {
+  if (S.cls.answered) return;
+  S.cls.answered = true;
+  const q = S.cls.exercise;
+  ['A','B','C','D'].forEach(l => document.getElementById('c'+l)?.classList.add('disabled'));
+
+  const originalChosen = q._unmap ? (q._unmap[chosen] || chosen) : chosen;
+  const correctDisplay = q._remap ? (q._remap[q.correct_answer] || q.correct_answer) : q.correct_answer;
+  const ok = originalChosen === q.correct_answer;
+
+  haptic(ok ? 'ok' : 'err');
+
+  document.getElementById('c' + chosen)?.classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) document.getElementById('c' + correctDisplay)?.classList.add('correct');
+
+  if (!S.cls.answeredIds.includes(q.id)) S.cls.answeredIds.push(q.id);
+
+  const rArea = document.getElementById('c-result');
+  if (rArea) {
+    rArea.innerHTML = `
+      <div class="result-badge ${ok ? 'ok' : 'bad'}">${ok ? '✅ Правильно!' : '❌ Неправильно'}</div>
+      ${q.explanation ? `<div class="expl-box">${esc(q.explanation)}</div>` : ''}
+      <button class="btn btn-primary" onclick="showClsMCQ()">Следующий →</button>
+      <button class="btn btn-secondary" onclick="pickClsMode('sorting')">Попробовать сортировку</button>
+      <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+    `;
+  }
+}
+
+/* ─── Sorting mode ──────────────────────────────────────────────────── */
+async function showClsSort() {
+  backBtn(true, () => showClsModeSelect(S.cls.topic, 1, 1));
+
+  page(hdr(S.cls.topic, () => showClsModeSelect(S.cls.topic, 1, 1)), `
+    <div class="loading-screen" style="min-height:200px"><div class="spinner"></div><p>Загружаем упражнение…</p></div>
+  `);
+
+  try {
+    const excl = S.cls.answeredIds.slice(-20).join(',');
+    const ex = await api(`/cls/question?topic=${encodeURIComponent(S.cls.topic)}&type=sorting&exclude=${excl}`);
+
+    if (!ex || !ex.id) {
+      APP.querySelector('.screen').innerHTML = `
+        <div style="text-align:center;padding:40px 0">
+          <div style="font-size:52px">🎉</div>
+          <div style="font-size:18px;font-weight:800;margin-top:12px">Все упражнения пройдены!</div>
+        </div>
+        <button class="btn btn-primary" onclick="S.cls.answeredIds=[];showClsSort()">Начать заново</button>
+        <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+        <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>`;
+      return;
+    }
+
+    if (!S.cls.answeredIds.includes(ex.id)) S.cls.answeredIds.push(ex.id);
+    S.cls.exercise  = ex;
+    S.cls.sortItems = ex.items ? [...ex.items] : [];
+    S.cls.sortIndex = 0;
+    S.cls.sortAnswers = {};
+
+    renderClsSortItem();
+  } catch (_) {
+    const sc = APP.querySelector('.screen');
+    if (sc) sc.innerHTML = `
+      <div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>
+      <button class="btn btn-secondary" onclick="showClsSort()">Повторить</button>`;
+  }
+}
+
+function renderClsSortItem() {
+  const sc = APP.querySelector('.screen'); if (!sc) return;
+  const { exercise: ex, sortItems, sortIndex } = S.cls;
+  if (sortIndex >= sortItems.length) { showClsSortResult(); return; }
+
+  const item = sortItems[sortIndex];
+  const progress = `${sortIndex + 1} / ${sortItems.length}`;
+
+  sc.innerHTML = `
+    <div style="font-size:12px;color:var(--hint);text-align:center">${esc(ex.category || ex.topic)}</div>
+
+    <div class="drug-card">
+      <div class="drug-card-name">${esc(item.name)}</div>
+      <div class="drug-card-hint">${esc(ex.instruction)}</div>
+      <div class="drug-card-counter">${progress}</div>
+    </div>
+
+    <div class="prog-bar"><div class="prog-fill" style="width:${Math.round(sortIndex/sortItems.length*100)}%"></div></div>
+
+    <div class="sort-cats">
+      ${ex.categories.map((cat, ci) => `
+        <button class="sort-cat-btn" id="scat${ci}" onclick="pickSortCat('${cat.replace(/'/g,"\\'")}',${ci})">
+          ${esc(cat)}
+        </button>`).join('')}
+    </div>
+  `;
+}
+
+function pickSortCat(chosen, btnIdx) {
+  const { exercise: ex, sortItems, sortIndex } = S.cls;
+  const item = sortItems[sortIndex];
+  const correct = item.category;
+  const ok = chosen === correct;
+
+  haptic(ok ? 'ok' : 'err');
+
+  // Disable all buttons
+  ex.categories.forEach((_, ci) => {
+    const btn = document.getElementById('scat' + ci);
+    if (btn) btn.disabled = true;
+  });
+
+  // Mark chosen and correct
+  const chosenBtn = document.getElementById('scat' + btnIdx);
+  if (chosenBtn) chosenBtn.classList.add(ok ? 'correct' : 'wrong');
+
+  if (!ok) {
+    const correctIdx = ex.categories.indexOf(correct);
+    const correctBtn = document.getElementById('scat' + correctIdx);
+    if (correctBtn) correctBtn.classList.add('correct');
+  }
+
+  S.cls.sortAnswers[item.name] = { chosen, correct, ok };
+
+  setTimeout(() => {
+    S.cls.sortIndex++;
+    renderClsSortItem();
+  }, ok ? 600 : 1200);
+}
+
+function showClsSortResult() {
+  const sc = APP.querySelector('.screen'); if (!sc) return;
+  const { exercise: ex, sortAnswers } = S.cls;
+  const entries = Object.entries(sortAnswers);
+  const correct = entries.filter(([, v]) => v.ok).length;
+  const pct = entries.length > 0 ? Math.round(correct / entries.length * 100) : 0;
+  const g = grade(pct);
+
+  if (pct >= 80) confetti();
+  haptic(pct >= 80 ? 'ok' : 'warn');
+
+  sc.innerHTML = `
+    <div class="card result-hero">
+      <div class="result-emoji">${g.e}</div>
+      <div class="result-circle" style="--pct:${pct * 3.6}deg">
+        <div class="result-pct-text">${pct}%</div>
+      </div>
+      <div class="result-grade">${g.t}</div>
+      <div class="result-sub">${correct} из ${entries.length} препаратов распределено верно</div>
+    </div>
+
+    <div class="section-title">Разбор</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${entries.map(([name, v]) => `
+        <div class="sort-result-item ${v.ok ? 'sr-ok' : 'sr-bad'}">
+          <div>
+            <div class="sr-name">${v.ok ? '✅' : '❌'} ${esc(name)}</div>
+            <div class="sr-cat">${v.ok ? esc(v.correct) : `Вы: ${esc(v.chosen)} → Верно: ${esc(v.correct)}`}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <button class="btn btn-primary" onclick="showClsSort()">Ещё упражнение →</button>
+    <button class="btn btn-secondary" onclick="pickClsMode('mcq')">Попробовать тест</button>
+    <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+    <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>
+  `;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
