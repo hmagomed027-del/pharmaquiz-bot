@@ -201,7 +201,7 @@ async function showTopicPick(mode) {
   const titles = { training: 'Тренировка', exam: 'Экзамен' };
   backBtn(true, showHome);
 
-  page(hdr(titles[mode] || 'Выбор темы', showHome), `
+  page(hdr(titles[mode] || 'Выбор темы', () => showHome()), `
     <div class="topic-list" id="tlist">
       <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
     </div>
@@ -516,7 +516,7 @@ function showExamSetup() {
        </div>`
     : `<button class="btn btn-secondary" onclick="showTopicPick('exam')">Выбрать тему →</button>`;
 
-  page(hdr('Настройки экзамена', showHome), `
+  page(hdr('Настройки экзамена', () => showHome()), `
     <div class="card"><div class="opt-label">Тема</div>${topicBlock}</div>
 
     <div class="card">
@@ -788,7 +788,7 @@ async function toggleExpl(elId, qid, btn) {
 ══════════════════════════════════════════════════════════════════════ */
 async function showStats() {
   backBtn(true, showHome);
-  page(hdr('Статистика', showHome), `
+  page(hdr('Статистика', () => showHome()), `
     <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
   `);
 
