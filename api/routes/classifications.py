@@ -1,4 +1,3 @@
-import glob
 import json
 import random
 from pathlib import Path
@@ -11,6 +10,32 @@ router = APIRouter()
 # ── Load all classification JSON files at import time ──────────────────────
 _CLASSIFICATIONS: list[dict] = []
 _TOPICS_META: dict[str, dict] = {}
+_TOPIC_SECTIONS: dict[str, str] = {}   # topic → section
+_SECTIONS_META: dict[str, dict] = {}
+
+_SECTION_ICONS: dict[str, str] = {
+    "ПНС":                              "⚡",
+    "ЦНС":                              "🧠",
+    "Дыхание":                          "🫁",
+    "Пищеварение":                      "🫃",
+    "ССС":                              "❤️",
+    "Кровь":                            "🩸",
+    "Химиопрепараты":                   "🧫",
+    "Иммунитет (воспаление и аллергия)": "🛡️",
+    "Диуретики, матка":                 "💧",
+}
+
+_SECTION_COLORS: dict[str, str] = {
+    "ПНС":                              "#2E86AB",
+    "ЦНС":                              "#9B59B6",
+    "Дыхание":                          "#27AE60",
+    "Пищеварение":                      "#E67E22",
+    "ССС":                              "#E74C3C",
+    "Кровь":                            "#C0392B",
+    "Химиопрепараты":                   "#1ABC9C",
+    "Иммунитет (воспаление и аллергия)": "#F39C12",
+    "Диуретики, матка":                 "#5DADE2",
+}
 
 _TOPIC_ICONS: dict[str, str] = {
     "β-адреноблокаторы":      "💊",
@@ -97,25 +122,55 @@ def _load():
         except Exception:
             pass
 
-    # Build topics index
     for item in _CLASSIFICATIONS:
         topic = item.get("topic", "")
+        section = item.get("section", "")
+        kind = item.get("type", "mcq")
+
         if topic not in _TOPICS_META:
             _TOPICS_META[topic] = {"mcq": 0, "sorting": 0}
-        t = item.get("type", "mcq")
-        if t == "sorting":
+        if kind == "sorting":
             _TOPICS_META[topic]["sorting"] += 1
         else:
             _TOPICS_META[topic]["mcq"] += 1
+
+        if topic and section and topic not in _TOPIC_SECTIONS:
+            _TOPIC_SECTIONS[topic] = section
+
+        if section:
+            if section not in _SECTIONS_META:
+                _SECTIONS_META[section] = {"mcq": 0, "sorting": 0, "topics": set()}
+            if kind == "sorting":
+                _SECTIONS_META[section]["sorting"] += 1
+            else:
+                _SECTIONS_META[section]["mcq"] += 1
+            _SECTIONS_META[section]["topics"].add(topic)
 
 
 _load()
 
 
+@router.get("/cls/sections")
+async def cls_sections():
+    result = []
+    for section, counts in _SECTIONS_META.items():
+        result.append({
+            "section": section,
+            "mcq_count": counts["mcq"],
+            "sort_count": counts["sorting"],
+            "topic_count": len(counts["topics"]),
+            "icon": _SECTION_ICONS.get(section, "📋"),
+            "color": _SECTION_COLORS.get(section, "#95A5A6"),
+        })
+    return result
+
+
 @router.get("/cls/topics")
-async def cls_topics():
+async def cls_topics(section: str = Query("")):
     result = []
     for topic, counts in _TOPICS_META.items():
+        if section and _TOPIC_SECTIONS.get(topic, "") != section:
+            continue
         result.append({
             "topic": topic,
             "mcq_count": counts["mcq"],

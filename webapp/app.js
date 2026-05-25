@@ -26,7 +26,7 @@ const S = {
     warnShown: false, finished: false,
   },
   cls: {
-    topic: null, mode: 'mcq',
+    section: null, topic: null, mode: 'mcq',
     exercise: null, answered: false, answeredIds: [],
     sortItems: [], sortIndex: 0, sortAnswers: {},
   },
@@ -952,6 +952,43 @@ async function showClassificationPick() {
   backBtn(true, showHome);
   page(hdr('Классификации', () => showHome()), `
     <div style="font-size:13px;color:var(--hint);margin-bottom:2px">
+      Выберите раздел для изучения
+    </div>
+    <div class="topic-list" id="cls-list">
+      <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
+    </div>
+  `);
+
+  try {
+    const sections = await api('/cls/sections');
+    const list = document.getElementById('cls-list');
+    if (!list) return;
+    list.innerHTML = sections.map(function(s) {
+      const col = s.color || '#95A5A6';
+      const safeSection = s.section.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const sub = s.topic_count + ' групп · Тест ' + s.mcq_count + ' · Сорт. ' + s.sort_count;
+      return '<button class="cls-topic-item" onclick="showClsSectionTopics(\'' + safeSection + '\')">'
+        + '<div class="cls-topic-icon" style="background:' + col + '22;border:1.5px solid ' + col + '44">' + s.icon + '</div>'
+        + '<div class="cls-topic-info">'
+        + '<div class="cls-topic-name">' + esc(s.section) + '</div>'
+        + '<div style="font-size:12px;color:var(--hint);margin-top:2px">' + sub + '</div>'
+        + '</div>'
+        + '<div class="topic-arr">›</div>'
+        + '</button>';
+    }).join('');
+  } catch (err) {
+    const l = document.getElementById('cls-list');
+    if (l) l.innerHTML = '<div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>'
+      + '<button class="btn btn-secondary" onclick="showClassificationPick()">Повторить</button>';
+  }
+}
+
+async function showClsSectionTopics(section) {
+  haptic('sel');
+  S.cls.section = section;
+  backBtn(true, showClassificationPick);
+  page(hdr(section, () => showClassificationPick()), `
+    <div style="font-size:13px;color:var(--hint);margin-bottom:2px">
       Выберите группу препаратов для изучения
     </div>
     <div class="topic-list" id="cls-list">
@@ -960,7 +997,7 @@ async function showClassificationPick() {
   `);
 
   try {
-    const topics = await api('/cls/topics');
+    const topics = await api('/cls/topics?section=' + encodeURIComponent(section));
     const list = document.getElementById('cls-list');
     if (!list) return;
     list.innerHTML = topics.map(function(t) {
@@ -981,7 +1018,7 @@ async function showClassificationPick() {
   } catch (err) {
     const l = document.getElementById('cls-list');
     if (l) l.innerHTML = '<div style="text-align:center;color:var(--hint);padding:40px 0">Ошибка загрузки</div>'
-      + '<button class="btn btn-secondary" onclick="showClassificationPick()">Повторить</button>';
+      + '<button class="btn btn-secondary" onclick="showClsSectionTopics(S.cls.section)">Повторить</button>';
   }
 }
 
@@ -993,8 +1030,8 @@ function showClsModeSelect(topic, mcqCount, sortCount) {
   if (sortCount === 0) { S.cls.mode = 'mcq';     S.cls.answeredIds = []; startClsExercise(); return; }
   if (mcqCount  === 0) { S.cls.mode = 'sorting'; S.cls.answeredIds = []; startClsExercise(); return; }
 
-  backBtn(true, showClassificationPick);
-  page(hdr(topic, () => showClassificationPick()), `
+  backBtn(true, () => showClsSectionTopics(S.cls.section));
+  page(hdr(topic, () => showClsSectionTopics(S.cls.section)), `
     <div style="font-size:14px;color:var(--hint);margin-bottom:4px">Выберите режим занятия</div>
 
     <button class="menu-card full" style="background:linear-gradient(135deg,#1B4332,#2D6A4F,#40916C)" onclick="pickClsMode('mcq')">
@@ -1051,7 +1088,7 @@ async function showClsMCQ() {
           <div style="font-size:18px;font-weight:800;margin-top:12px">Все вопросы пройдены!</div>
         </div>
         <button class="btn btn-primary" onclick="S.cls.answeredIds=[];showClsMCQ()">Начать заново</button>
-        <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+        <button class="btn btn-secondary" onclick="showClsSectionTopics(S.cls.section)">Другая тема</button>
         <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>`;
       return;
     }
@@ -1107,7 +1144,7 @@ function submitClsMCQ(chosen) {
   if (q.explanation) html += '<div class="expl-box">' + esc(q.explanation) + '</div>';
   html += '<button class="btn btn-primary" onclick="showClsMCQ()">Следующий →</button>';
   if (S.cls.sortCount > 0) html += '<button class="btn btn-secondary" onclick="pickClsMode(\'sorting\')">Попробовать сортировку</button>';
-  html += '<button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>';
+  html += '<button class="btn btn-secondary" onclick="showClsSectionTopics(S.cls.section)">Другая тема</button>';
   rArea.innerHTML = html;
 }
 
@@ -1130,7 +1167,7 @@ async function showClsSort() {
           <div style="font-size:18px;font-weight:800;margin-top:12px">Все упражнения пройдены!</div>
         </div>
         <button class="btn btn-primary" onclick="S.cls.answeredIds=[];showClsSort()">Начать заново</button>
-        <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+        <button class="btn btn-secondary" onclick="showClsSectionTopics(S.cls.section)">Другая тема</button>
         <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>`;
       return;
     }
@@ -1244,7 +1281,7 @@ function showClsSortResult() {
 
     <button class="btn btn-primary" onclick="showClsSort()">Ещё упражнение →</button>
     <button class="btn btn-secondary" onclick="pickClsMode('mcq')">Попробовать тест</button>
-    <button class="btn btn-secondary" onclick="showClassificationPick()">Другая тема</button>
+    <button class="btn btn-secondary" onclick="showClsSectionTopics(S.cls.section)">Другая тема</button>
     <button class="btn btn-secondary" onclick="showHome()">Главное меню</button>
   `;
 }
