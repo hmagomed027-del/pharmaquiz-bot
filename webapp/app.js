@@ -994,7 +994,7 @@ function showClsModeSelect(topic, mcqCount, sortCount) {
   if (mcqCount  === 0) { S.cls.mode = 'sorting'; S.cls.answeredIds = []; startClsExercise(); return; }
 
   backBtn(true, showClassificationPick);
-  page(hdr(topic, showClassificationPick), `
+  page(hdr(topic, () => showClassificationPick()), `
     <div style="font-size:14px;color:var(--hint);margin-bottom:4px">Выберите режим занятия</div>
 
     <button class="menu-card full" style="background:linear-gradient(135deg,#1B4332,#2D6A4F,#40916C)" onclick="pickClsMode('mcq')">
