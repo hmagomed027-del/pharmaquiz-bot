@@ -8,32 +8,54 @@ from bot.database import queries
 router = APIRouter()
 
 TOPIC_META = {
-    "ПНС":                       {"icon": "⚡", "color": "#4A90D9"},
-    "ЦНС":                       {"icon": "🧠", "color": "#9B59B6"},
-    "ССС":                       {"icon": "❤️", "color": "#E74C3C"},
-    "Дыхательная система":       {"icon": "🫁", "color": "#2ECC71"},
-    "Пищеварительная система":   {"icon": "🫙", "color": "#F39C12"},
-    "Химиопрепараты":            {"icon": "⚗️", "color": "#1ABC9C"},
-    "Рецептура":                 {"icon": "✍️", "color": "#E67E22"},
-    "Противоаллергические":      {"icon": "🤧", "color": "#3498DB"},
-    "Противовоспалительные":     {"icon": "🔥", "color": "#E67E22"},
-    "Анальгетики":               {"icon": "💊", "color": "#8E44AD"},
-    "Средства для наркоза":      {"icon": "😴", "color": "#2C3E50"},
-    "Диуретики":                 {"icon": "💧", "color": "#5DADE2"},
-    "Средства крови":            {"icon": "🩸", "color": "#C0392B"},
-    "Гормоны":                   {"icon": "🧬", "color": "#27AE60"},
-    "Витамины":                  {"icon": "🍊", "color": "#F1C40F"},
+    "Рецептура":                     {"icon": "✍️", "color": "#E67E22"},
+    "ПНС":                           {"icon": "⚡", "color": "#4A90D9"},
+    "ЦНС":                           {"icon": "🧠", "color": "#9B59B6"},
+    "Анальгетики":                   {"icon": "💊", "color": "#8E44AD"},
+    "Средства для наркоза":          {"icon": "😷", "color": "#2C3E50"},
+    "Противовоспалительные":         {"icon": "🔥", "color": "#E74C3C"},
+    "Противоаллергические":          {"icon": "🛡️", "color": "#3498DB"},
+    "Дыхательная система":           {"icon": "🫁", "color": "#2ECC71"},
+    "Пищеварительная система":       {"icon": "🫃", "color": "#F39C12"},
+    "ССС":                           {"icon": "❤️", "color": "#E74C3C"},
+    "Диуретики":                     {"icon": "💧", "color": "#5DADE2"},
+    "Средства крови":                {"icon": "🩸", "color": "#C0392B"},
+    "Гормоны":                       {"icon": "🧬", "color": "#27AE60"},
+    "Витамины":                      {"icon": "🍊", "color": "#F1C40F"},
+    "Химиопрепараты":                {"icon": "⚗️", "color": "#1ABC9C"},
+    "Химиотерапевтические препараты":{"icon": "🧫", "color": "#16A085"},
 }
+
+TOPIC_ORDER = [
+    "Рецептура",
+    "ПНС",
+    "ЦНС",
+    "Анальгетики",
+    "Средства для наркоза",
+    "Противовоспалительные",
+    "Противоаллергические",
+    "Дыхательная система",
+    "Пищеварительная система",
+    "ССС",
+    "Диуретики",
+    "Средства крови",
+    "Гормоны",
+    "Витамины",
+    "Химиопрепараты",
+    "Химиотерапевтические препараты",
+]
 
 
 @router.get("/topics")
 async def get_topics(user_id: int = Depends(get_user_id)):
     db = await get_db()
     counts = await queries.count_questions_by_topic(db)
-    return [
+    items = [
         {"topic": topic, "count": count, **TOPIC_META.get(topic, {"icon": "📚", "color": "#95A5A6"})}
         for topic, count in counts.items()
     ]
+    items.sort(key=lambda x: TOPIC_ORDER.index(x["topic"]) if x["topic"] in TOPIC_ORDER else len(TOPIC_ORDER))
+    return items
 
 
 @router.get("/question")

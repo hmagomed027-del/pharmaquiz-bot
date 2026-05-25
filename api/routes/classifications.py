@@ -10,7 +10,7 @@ router = APIRouter()
 # ── Load all classification JSON files at import time ──────────────────────
 _CLASSIFICATIONS: list[dict] = []
 _TOPICS_META: dict[str, dict] = {}
-_TOPIC_SECTIONS: dict[str, str] = {}   # topic → section
+_TOPIC_SECTIONS: dict[str, set] = {}   # topic → set of sections
 _SECTIONS_META: dict[str, dict] = {}
 
 _SECTION_ICONS: dict[str, str] = {
@@ -192,8 +192,8 @@ def _load():
         else:
             _TOPICS_META[topic]["mcq"] += 1
 
-        if topic and section and topic not in _TOPIC_SECTIONS:
-            _TOPIC_SECTIONS[topic] = section
+        if topic and section:
+            _TOPIC_SECTIONS.setdefault(topic, set()).add(section)
 
         if section:
             if section not in _SECTIONS_META:
@@ -206,6 +206,38 @@ def _load():
 
 
 _load()
+
+_SECTION_ORDER = [
+    "ПНС",
+    "ЦНС",
+    "Противовоспалительные",
+    "Противоаллергические",
+    "Дыхательная система",
+    "Пищеварительная система",
+    "ССС",
+    "Диуретики",
+    "Миометрий",
+    "Кровь",
+    "Гормоны",
+    "Витамины",
+    "Химиопрепараты",
+]
+
+_TOPIC_ORDER: dict[str, list[str]] = {
+    "ПНС": ["Местные анестетики", "Холиномиметики", "Холиноблокаторы", "Адреномиметики", "Адреноблокаторы"],
+    "ЦНС": [
+        "Анальгетики", "Средства для наркоза", "Спирт этиловый", "Снотворные средства",
+        "Противоэпилептические", "Противопаркинсонические", "Антипсихотики", "Транквилизаторы",
+        "Антидепрессанты", "Средства для лечения маний", "Седативные средства", "Ноотропы",
+        "Средства, вызывающие лекарственную зависимость",
+    ],
+    "Химиопрепараты": [
+        "Антибиотики — классификация", "Пенициллины", "Цефалоспорины",
+        "Макролиды", "Аминогликозиды", "Тетрациклины", "Фторхинолоны",
+    ],
+    "Гормоны": ["Гормоны — инсулины", "Гормоны — тиреоидные", "Глюкокортикостероиды", "Половые гормоны"],
+    "Витамины": ["Жирорастворимые витамины", "Водорастворимые витамины", "Витамины"],
+}
 
 
 @router.get("/cls/sections")
@@ -220,6 +252,7 @@ async def cls_sections():
             "icon": _SECTION_ICONS.get(section, "📋"),
             "color": _SECTION_COLORS.get(section, "#95A5A6"),
         })
+    result.sort(key=lambda x: _SECTION_ORDER.index(x["section"]) if x["section"] in _SECTION_ORDER else len(_SECTION_ORDER))
     return result
 
 
@@ -227,7 +260,7 @@ async def cls_sections():
 async def cls_topics(section: str = Query("")):
     result = []
     for topic, counts in _TOPICS_META.items():
-        if section and _TOPIC_SECTIONS.get(topic, "") != section:
+        if section and section not in _TOPIC_SECTIONS.get(topic, set()):
             continue
         result.append({
             "topic": topic,
@@ -236,6 +269,8 @@ async def cls_topics(section: str = Query("")):
             "icon": _TOPIC_ICONS.get(topic, "📋"),
             "color": _TOPIC_COLORS.get(topic, "#95A5A6"),
         })
+    order = _TOPIC_ORDER.get(section, [])
+    result.sort(key=lambda x: order.index(x["topic"]) if x["topic"] in order else len(order))
     return result
 
 
