@@ -546,3 +546,29 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
   display: inline-block; border-radius: 10px;
   padding: 2px 7px; font-size: 10px; font-weight: 700;
 }
+
+/* ── Quote card (exam result) ─────────────────────────────────────────── */
+.quote-card {
+  padding: 16px 18px;
+  border-left: 4px solid transparent;
+  position: relative;
+}
+.quote-pass {
+  border-left-color: #2D6A4F;
+  background: linear-gradient(135deg, #2D6A4F0d, #40916C08);
+}
+.quote-fail {
+  border-left-color: #3498DB;
+  background: linear-gradient(135deg, #3498DB0d, #2471A308);
+}
+.quote-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--hint); margin-bottom: 8px;
+}
+.quote-text {
+  font-size: 15px; line-height: 1.55; font-style: italic;
+  color: var(--text); margin-bottom: 8px;
+}
+.quote-author {
+  font-size: 12px; font-weight: 600; color: var(--hint); text-align: right;
+}
