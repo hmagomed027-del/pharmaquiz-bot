@@ -210,15 +210,24 @@ async def count_questions_by_topic(db: aiosqlite.Connection) -> dict:
 async def get_admin_overview(db: aiosqlite.Connection) -> dict:
     async with db.execute("SELECT COUNT(*) as cnt FROM users") as cur:
         total_users = (await cur.fetchone())["cnt"]
-    async with db.execute(
-        "SELECT COUNT(DISTINCT user_id) as cnt FROM training_answers "
-        "WHERE date(answered_at) = date('now')"
-    ) as cur:
+    async with db.execute("""
+        SELECT COUNT(DISTINCT user_id) as cnt FROM (
+            SELECT user_id FROM training_answers WHERE date(answered_at) = date('now')
+            UNION
+            SELECT user_id FROM exam_sessions
+              WHERE date(started_at) = date('now') AND status = 'completed'
+        )
+    """) as cur:
         active_today = (await cur.fetchone())["cnt"]
-    async with db.execute(
-        "SELECT COUNT(DISTINCT user_id) as cnt FROM training_answers "
-        "WHERE answered_at >= datetime('now', '-7 days')"
-    ) as cur:
+    async with db.execute("""
+        SELECT COUNT(DISTINCT user_id) as cnt FROM (
+            SELECT user_id FROM training_answers
+              WHERE answered_at >= datetime('now', '-7 days')
+            UNION
+            SELECT user_id FROM exam_sessions
+              WHERE started_at >= datetime('now', '-7 days') AND status = 'completed'
+        )
+    """) as cur:
         active_week = (await cur.fetchone())["cnt"]
     async with db.execute("SELECT COUNT(*) as cnt FROM training_answers") as cur:
         total_training = (await cur.fetchone())["cnt"]
@@ -308,16 +317,7 @@ async def get_users_for_reminder(db: aiosqlite.Connection, time_str: str) -> lis
         FROM users u
         WHERE u.reminder_time = ?
           AND (
-            SELECT MAX(ts)
-            FROM (
-              SELECT MAX(answered_at) AS ts FROM training_answers WHERE user_id = u.telegram_id
-              UNION ALL
-              SELECT MAX(finished_at) AS ts FROM exam_sessions
-                WHERE user_id = u.telegram_id AND finished_at IS NOT NULL
-            )
-          ) IS NULL
-          OR (
-            (julianday('now') - julianday((
+            (
               SELECT MAX(ts)
               FROM (
                 SELECT MAX(answered_at) AS ts FROM training_answers WHERE user_id = u.telegram_id
@@ -325,7 +325,18 @@ async def get_users_for_reminder(db: aiosqlite.Connection, time_str: str) -> lis
                 SELECT MAX(finished_at) AS ts FROM exam_sessions
                   WHERE user_id = u.telegram_id AND finished_at IS NOT NULL
               )
-            ))) * 24 >= 23
+            ) IS NULL
+            OR (
+              julianday('now') - julianday((
+                SELECT MAX(ts)
+                FROM (
+                  SELECT MAX(answered_at) AS ts FROM training_answers WHERE user_id = u.telegram_id
+                  UNION ALL
+                  SELECT MAX(finished_at) AS ts FROM exam_sessions
+                    WHERE user_id = u.telegram_id AND finished_at IS NOT NULL
+                )
+              ))
+            ) * 24 >= 23
           )
     """, (time_str,)) as cur:
         return await cur.fetchall()

@@ -19,9 +19,29 @@ def is_admin(user_id: int) -> bool:
     return user_id in config.admin_ids
 
 
+async def _require_admin(message: Message) -> bool:
+    if not is_admin(message.from_user.id):
+        await message.answer("⛔ Нет доступа\\.", parse_mode="MarkdownV2")
+        return False
+    return True
+
+
+async def _send_chunks(message: Message, lines: list[str], limit: int = 3800) -> None:
+    """Отправляет список строк, разбивая на сообщения если превышает limit символов."""
+    current, current_len = [], 0
+    for line in lines:
+        if current_len + len(line) + 1 > limit and current:
+            await message.answer("\n".join(current), parse_mode="MarkdownV2")
+            current, current_len = [], 0
+        current.append(line)
+        current_len += len(line) + 1
+    if current:
+        await message.answer("\n".join(current), parse_mode="MarkdownV2")
+
+
 @router.message(Command("reload"))
 async def cmd_reload(message: Message) -> None:
-    if not is_admin(message.from_user.id):
+    if not await _require_admin(message):
         return
     db = await get_db()
     count = await load_all_questions(db)
@@ -34,7 +54,7 @@ async def cmd_reload(message: Message) -> None:
 
 @router.message(Command("dbstats"))
 async def cmd_dbstats(message: Message) -> None:
-    if not is_admin(message.from_user.id):
+    if not await _require_admin(message):
         return
     db = await get_db()
     topic_counts = await queries.count_questions_by_topic(db)
@@ -47,7 +67,7 @@ async def cmd_dbstats(message: Message) -> None:
 
 @router.message(Command("adminstats"))
 async def cmd_adminstats(message: Message) -> None:
-    if not is_admin(message.from_user.id):
+    if not await _require_admin(message):
         return
     db = await get_db()
 
@@ -82,7 +102,7 @@ async def cmd_adminstats(message: Message) -> None:
                 f"{mark} {escape_md(t['topic'])}\n"
                 f"   {bar} *{pct}%* верно \\({t['correct']}/{t['total']}\\)"
             )
-        await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+        await _send_chunks(message, lines)
 
     # ── Сообщение 3: Статистика экзаменов ─────────────────────────────────
     if exams:
@@ -96,7 +116,7 @@ async def cmd_adminstats(message: Message) -> None:
                 f"\\(мин {e['min_pct']}% / макс {e['max_pct']}%, "
                 f"сессий: {e['sessions']}\\)"
             )
-        await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+        await _send_chunks(message, lines)
 
     # ── Сообщение 4: Сложнейшие вопросы ──────────────────────────────────
     if hard_q:
