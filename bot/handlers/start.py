@@ -21,35 +21,36 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     u = message.from_user
     await queries.upsert_user(db, u.id, u.username or "", u.first_name or "", u.last_name or "")
 
+    rows = []
     if config.webapp_url:
-        rows = [
-            [InlineKeyboardButton(
-                text="🎓 Открыть ФармаКвиз",
-                web_app=WebAppInfo(url=config.webapp_url),
-            )],
-            [InlineKeyboardButton(
-                text="🔔 Напоминания",
-                callback_data="open_reminder",
-            )],
-        ]
-        if is_admin(u.id):
-            rows.append([InlineKeyboardButton(
-                text="👑 Статистика студентов",
-                callback_data="admin_stats",
-            )])
-        kb = InlineKeyboardMarkup(inline_keyboard=rows)
-        await message.answer(
+        rows.append([InlineKeyboardButton(
+            text="🎓 Открыть ФармаКвиз",
+            web_app=WebAppInfo(url=config.webapp_url),
+        )])
+    rows.append([InlineKeyboardButton(
+        text="🔔 Напоминания",
+        callback_data="open_reminder",
+    )])
+    if is_admin(u.id):
+        rows.append([InlineKeyboardButton(
+            text="👑 Статистика студентов",
+            callback_data="admin_stats",
+        )])
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+
+    if config.webapp_url:
+        text = (
             f"👋 Привет, {u.first_name or 'Студент'}!\n\n"
             "Я помогу тебе подготовиться к экзаменам по фармакологии.\n"
-            "Нажми кнопку ниже, чтобы открыть приложение:",
-            reply_markup=kb,
+            "Нажми кнопку ниже, чтобы открыть приложение:"
         )
     else:
-        await message.answer(
-            "👋 Привет!\n\n"
-            "Приложение ФармаКвиз ещё настраивается.\n"
-            "Попробуй позже или обратись к администратору."
+        text = (
+            f"👋 Привет, {u.first_name or 'Студент'}!\n\n"
+            "Приложение ФармаКвиз ещё настраивается — скоро будет доступно.\n"
+            "Напоминания уже работают 🔔"
         )
+    await message.answer(text, reply_markup=kb)
 
 
 @router.message(Command("help"))
