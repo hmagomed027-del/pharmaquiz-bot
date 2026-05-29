@@ -85,6 +85,14 @@ async def init_db(path: str) -> None:
     _db.row_factory = aiosqlite.Row
     await _db.executescript(SCHEMA)
     await _db.commit()
+    # migrations for existing databases
+    for col, definition in [("reminder_time", "TEXT")]:
+        try:
+            await _db.execute(f"ALTER TABLE users ADD COLUMN {col} {definition}")
+            await _db.commit()
+            logger.info("Migration: added column users.%s", col)
+        except Exception:
+            pass  # column already exists
     logger.info("Database initialised at %s", path)
 
 

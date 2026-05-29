@@ -210,3 +210,37 @@ async def count_questions_by_topic(db: aiosqlite.Connection) -> dict:
 async def get_all_users(db: aiosqlite.Connection) -> list[aiosqlite.Row]:
     async with db.execute("SELECT telegram_id FROM users") as cur:
         return await cur.fetchall()
+
+
+async def set_reminder_time(db: aiosqlite.Connection, telegram_id: int, time_str: Optional[str]) -> None:
+    await db.execute(
+        "UPDATE users SET reminder_time = ? WHERE telegram_id = ?",
+        (time_str, telegram_id)
+    )
+    await db.commit()
+
+
+async def get_users_for_reminder(db: aiosqlite.Connection, time_str: str) -> list[aiosqlite.Row]:
+    """Возвращает пользователей у которых reminder_time совпадает и нет активности 23+ часов."""
+    async with db.execute("""
+        SELECT u.telegram_id, u.first_name
+        FROM users u
+        WHERE u.reminder_time = ?
+          AND (
+            (SELECT MAX(answered_at) FROM training_answers WHERE user_id = u.telegram_id) IS NULL
+            OR
+            (julianday('now') - julianday(
+                (SELECT MAX(answered_at) FROM training_answers WHERE user_id = u.telegram_id)
+            )) * 24 >= 23
+          )
+          AND (
+            (SELECT MAX(finished_at) FROM exam_sessions
+             WHERE user_id = u.telegram_id AND finished_at IS NOT NULL) IS NULL
+            OR
+            (julianday('now') - julianday(
+                (SELECT MAX(finished_at) FROM exam_sessions
+                 WHERE user_id = u.telegram_id AND finished_at IS NOT NULL)
+            )) * 24 >= 23
+          )
+    """, (time_str,)) as cur:
+        return await cur.fetchall()

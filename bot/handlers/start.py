@@ -21,12 +21,16 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await queries.upsert_user(db, u.id, u.username or "", u.first_name or "", u.last_name or "")
 
     if config.webapp_url:
-        kb = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
                 text="🎓 Открыть ФармаКвиз",
                 web_app=WebAppInfo(url=config.webapp_url),
-            )
-        ]])
+            )],
+            [InlineKeyboardButton(
+                text="🔔 Напоминания",
+                callback_data="open_reminder",
+            )],
+        ])
         await message.answer(
             f"👋 Привет, {u.first_name or 'Студент'}!\n\n"
             "Я помогу тебе подготовиться к экзаменам по фармакологии.\n"
@@ -47,6 +51,7 @@ async def cmd_help(message: Message) -> None:
         "💊 ФармаКвиз — подготовка к экзаменам по фармакологии\n\n"
         "📖 Тренировка — вопросы с объяснениями\n"
         "📝 Экзамен — с таймером и разбором ошибок\n"
-        "📊 Статистика — твой прогресс\n\n"
+        "📊 Статистика — твой прогресс\n"
+        "🔔 /reminder — ежедневное напоминание\n\n"
         "Используй кнопку /start чтобы открыть приложение."
     )

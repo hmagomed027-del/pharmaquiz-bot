@@ -12,9 +12,10 @@ from bot.config import config
 from bot.database.db import init_db, close_db, get_db
 from bot.services.question_loader import load_all_questions
 from bot.services.wikipedia_service import close_session
+from bot.services.scheduler import reminder_scheduler
 from bot.middlewares.throttling import ThrottlingMiddleware
 
-from bot.handlers import start, training, exam, stats, admin
+from bot.handlers import start, training, exam, stats, admin, reminder
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,6 +62,7 @@ async def main() -> None:
     dp.message.middleware(ThrottlingMiddleware(rate=config.throttle_rate))
 
     dp.include_router(admin.router)
+    dp.include_router(reminder.router)
     dp.include_router(training.router)
     dp.include_router(exam.router)
     dp.include_router(stats.router)
@@ -68,6 +70,8 @@ async def main() -> None:
 
     me = await bot.get_me()
     logger.info("Bot started: @%s", me.username)
+
+    asyncio.create_task(reminder_scheduler(bot))
 
     try:
         await dp.start_polling(bot)
