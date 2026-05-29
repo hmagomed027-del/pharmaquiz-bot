@@ -29,6 +29,10 @@ def _resolve_webapp_url() -> str:
     explicit = os.getenv("WEBAPP_URL", "").strip()
     if explicit:
         return explicit
+    # Render автоматически задаёт RENDER_EXTERNAL_URL
+    render_url = os.getenv("RENDER_EXTERNAL_URL", "").strip()
+    if render_url:
+        return render_url
     # Railway автоматически задаёт RAILWAY_PUBLIC_DOMAIN
     railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
     if railway_domain:
