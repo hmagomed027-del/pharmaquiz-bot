@@ -13,8 +13,12 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import config
-from bot.handlers.start import router as start_router
+from bot.database.db import init_db, close_db, get_db
+from bot.services.question_loader import load_all_questions
+from bot.services.wikipedia_service import close_session
+from bot.services.scheduler import reminder_scheduler
 from bot.middlewares.throttling import ThrottlingMiddleware
+from bot.handlers import start, training, exam, stats, admin, reminder
 from api.main import app as fastapi_app
 
 logging.basicConfig(
@@ -28,19 +32,29 @@ logger = logging.getLogger(__name__)
 async def run_bot() -> None:
     bot = Bot(
         token=config.bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2),
     )
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(ThrottlingMiddleware(rate=config.throttle_rate))
-    dp.include_router(start_router)
+
+    dp.include_router(admin.router)
+    dp.include_router(reminder.router)
+    dp.include_router(training.router)
+    dp.include_router(exam.router)
+    dp.include_router(stats.router)
+    dp.include_router(start.router)
 
     me = await bot.get_me()
     logger.info("Telegram bot started: @%s", me.username)
 
+    asyncio.create_task(reminder_scheduler(bot))
+
     try:
         await dp.start_polling(bot)
     finally:
-        await bot.session.close()
+        await close_session()
+        await close_db()
+        logger.info("Bot stopped")
 
 
 async def main() -> None:

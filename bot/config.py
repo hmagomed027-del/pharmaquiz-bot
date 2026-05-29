@@ -25,6 +25,17 @@ def _parse_admin_ids(raw: Optional[str]) -> list[int]:
     return [int(x.strip()) for x in raw.split(",") if x.strip().isdigit()]
 
 
+def _resolve_webapp_url() -> str:
+    explicit = os.getenv("WEBAPP_URL", "").strip()
+    if explicit:
+        return explicit
+    # Railway автоматически задаёт RAILWAY_PUBLIC_DOMAIN
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+    if railway_domain:
+        return f"https://{railway_domain}"
+    return ""
+
+
 def load_settings() -> Settings:
     token = os.getenv("BOT_TOKEN")
     if not token:
@@ -38,7 +49,7 @@ def load_settings() -> Settings:
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
         max_exam_questions=int(os.getenv("MAX_EXAM_QUESTIONS", "30")),
         throttle_rate=float(os.getenv("THROTTLE_RATE", "0.5")),
-        webapp_url=os.getenv("WEBAPP_URL", ""),
+        webapp_url=_resolve_webapp_url(),
     )
 
 
