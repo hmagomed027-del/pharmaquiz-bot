@@ -8,6 +8,7 @@ from aiogram.fsm.context import FSMContext
 from bot.config import config
 from bot.database.db import get_db
 from bot.database import queries
+from bot.handlers.admin import is_admin
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await queries.upsert_user(db, u.id, u.username or "", u.first_name or "", u.last_name or "")
 
     if config.webapp_url:
-        kb = InlineKeyboardMarkup(inline_keyboard=[
+        rows = [
             [InlineKeyboardButton(
                 text="🎓 Открыть ФармаКвиз",
                 web_app=WebAppInfo(url=config.webapp_url),
@@ -30,7 +31,13 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
                 text="🔔 Напоминания",
                 callback_data="open_reminder",
             )],
-        ])
+        ]
+        if is_admin(u.id):
+            rows.append([InlineKeyboardButton(
+                text="👑 Статистика студентов",
+                callback_data="admin_stats",
+            )])
+        kb = InlineKeyboardMarkup(inline_keyboard=rows)
         await message.answer(
             f"👋 Привет, {u.first_name or 'Студент'}!\n\n"
             "Я помогу тебе подготовиться к экзаменам по фармакологии.\n"

@@ -1,7 +1,7 @@
 import logging
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from bot.config import config
@@ -65,10 +65,8 @@ async def cmd_dbstats(message: Message) -> None:
     await message.answer("\n".join(lines), parse_mode="MarkdownV2")
 
 
-@router.message(Command("adminstats"))
-async def cmd_adminstats(message: Message) -> None:
-    if not await _require_admin(message):
-        return
+async def _adminstats_body(message: Message) -> None:
+    """Отправляет полную статистику владельца в чат message."""
     db = await get_db()
 
     overview = await queries.get_admin_overview(db)
@@ -132,6 +130,22 @@ async def cmd_adminstats(message: Message) -> None:
         await message.answer("\n".join(lines), parse_mode="MarkdownV2")
     elif not training and not exams:
         await message.answer("Данных пока нет — студенты ещё не занимались\\.", parse_mode="MarkdownV2")
+
+
+@router.message(Command("adminstats"))
+async def cmd_adminstats(message: Message) -> None:
+    if not await _require_admin(message):
+        return
+    await _adminstats_body(message)
+
+
+@router.callback_query(F.data == "admin_stats")
+async def cb_admin_stats(call: CallbackQuery) -> None:
+    if not is_admin(call.from_user.id):
+        await call.answer("⛔ Нет доступа", show_alert=True)
+        return
+    await call.answer()
+    await _adminstats_body(call.message)
 
 
 def _difficulty_bar(pct: float, length: int = 8) -> str:
