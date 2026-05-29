@@ -29,7 +29,7 @@ def _reminder_keyboard(current: str | None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-async def _show_reminder_menu(user_id: int, first_name: str, answer_fn) -> None:
+async def _show_reminder_menu(user_id: int, answer_fn) -> None:
     db = await get_db()
     user = await queries.get_user(db, user_id)
     current = user["reminder_time"] if user else None
@@ -45,22 +45,18 @@ async def _show_reminder_menu(user_id: int, first_name: str, answer_fn) -> None:
 
 @router.callback_query(F.data == "open_reminder")
 async def cb_open_reminder(call: CallbackQuery) -> None:
-    await _show_reminder_menu(
-        call.from_user.id,
-        call.from_user.first_name,
-        call.message.answer,
-    )
+    await _show_reminder_menu(call.from_user.id, call.message.answer)
     await call.answer()
 
 
 @router.message(Command("reminder"))
 async def cmd_reminder(message: Message) -> None:
-    await _show_reminder_menu(message.from_user.id, message.from_user.first_name, message.answer)
+    await _show_reminder_menu(message.from_user.id, message.answer)
 
 
 @router.callback_query(F.data.startswith("reminder_set:"))
 async def cb_reminder_set(call: CallbackQuery) -> None:
-    time_str = call.data.split(":")[1]
+    time_str = call.data[len("reminder_set:"):]  # "reminder_set:20:00" → "20:00"
     db = await get_db()
     await queries.set_reminder_time(db, call.from_user.id, time_str)
     await call.message.edit_text(
