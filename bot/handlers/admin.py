@@ -45,6 +45,80 @@ async def cmd_dbstats(message: Message) -> None:
     await message.answer("\n".join(lines), parse_mode="MarkdownV2")
 
 
+@router.message(Command("adminstats"))
+async def cmd_adminstats(message: Message) -> None:
+    if not is_admin(message.from_user.id):
+        return
+    db = await get_db()
+
+    overview = await queries.get_admin_overview(db)
+    training = await queries.get_training_difficulty_by_topic(db)
+    exams = await queries.get_exam_stats_by_topic(db)
+    hard_q = await queries.get_hardest_questions(db, limit=8)
+
+    # ── Сообщение 1: Обзор ────────────────────────────────────────────────
+    lines = [
+        "👑 *Статистика для владельца*",
+        "",
+        "👥 *Пользователи*",
+        f"  Всего: *{overview['total_users']}*",
+        f"  Активны сегодня: *{overview['active_today']}*",
+        f"  Активны за 7 дней: *{overview['active_week']}*",
+        "",
+        "📈 *Активность*",
+        f"  Ответов в тренировке: *{overview['total_training']}*",
+        f"  Экзаменов завершено: *{overview['total_exams']}*",
+    ]
+    await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+
+    # ── Сообщение 2: Сложность тем в тренировке ───────────────────────────
+    if training:
+        lines = ["📚 *Тренировка — сложность тем* \\(по убыванию ошибок\\)", ""]
+        for t in training:
+            pct = t["pct"]
+            bar = _difficulty_bar(pct)
+            mark = "🔴" if pct < 50 else "🟡" if pct < 70 else "🟢"
+            lines.append(
+                f"{mark} {escape_md(t['topic'])}\n"
+                f"   {bar} *{pct}%* верно \\({t['correct']}/{t['total']}\\)"
+            )
+        await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+
+    # ── Сообщение 3: Статистика экзаменов ─────────────────────────────────
+    if exams:
+        lines = ["📝 *Экзамены — средний балл по темам*", ""]
+        for e in exams:
+            bar = _difficulty_bar(e["avg_pct"])
+            mark = "🔴" if e["avg_pct"] < 50 else "🟡" if e["avg_pct"] < 70 else "🟢"
+            lines.append(
+                f"{mark} {escape_md(e['topic'])}\n"
+                f"   {bar} *{e['avg_pct']}%* avg  "
+                f"\\(мин {e['min_pct']}% / макс {e['max_pct']}%, "
+                f"сессий: {e['sessions']}\\)"
+            )
+        await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+
+    # ── Сообщение 4: Сложнейшие вопросы ──────────────────────────────────
+    if hard_q:
+        lines = ["🧩 *Самые сложные вопросы* \\(наименьший % верных\\)", ""]
+        for i, q in enumerate(hard_q, 1):
+            q_text = escape_md(q["question"][:70]) + ("\\.\\.\\." if len(q["question"]) > 70 else "")
+            sub = f" — {escape_md(q['subtopic'])}" if q.get("subtopic") else ""
+            lines.append(
+                f"*{i}\\.* _{escape_md(q['topic'])}{sub}_\n"
+                f"   {q_text}\n"
+                f"   ❌ *{q['pct']}%* верно \\({q['correct']}/{q['total']} ответов\\)"
+            )
+        await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+    elif not training and not exams:
+        await message.answer("Данных пока нет — студенты ещё не занимались\\.", parse_mode="MarkdownV2")
+
+
+def _difficulty_bar(pct: float, length: int = 8) -> str:
+    filled = round(float(pct) / 100 * length)
+    return "█" * filled + "░" * (length - filled)
+
+
 @router.message(Command("broadcast"))
 async def cmd_broadcast_start(message: Message, state: FSMContext) -> None:
     if not is_admin(message.from_user.id):

@@ -207,6 +207,83 @@ async def count_questions_by_topic(db: aiosqlite.Connection) -> dict:
     return {r["topic"]: r["cnt"] for r in rows}
 
 
+async def get_admin_overview(db: aiosqlite.Connection) -> dict:
+    async with db.execute("SELECT COUNT(*) as cnt FROM users") as cur:
+        total_users = (await cur.fetchone())["cnt"]
+    async with db.execute(
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM training_answers "
+        "WHERE date(answered_at) = date('now')"
+    ) as cur:
+        active_today = (await cur.fetchone())["cnt"]
+    async with db.execute(
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM training_answers "
+        "WHERE answered_at >= datetime('now', '-7 days')"
+    ) as cur:
+        active_week = (await cur.fetchone())["cnt"]
+    async with db.execute("SELECT COUNT(*) as cnt FROM training_answers") as cur:
+        total_training = (await cur.fetchone())["cnt"]
+    async with db.execute(
+        "SELECT COUNT(*) as cnt FROM exam_sessions WHERE status = 'completed'"
+    ) as cur:
+        total_exams = (await cur.fetchone())["cnt"]
+    return {
+        "total_users": total_users,
+        "active_today": active_today,
+        "active_week": active_week,
+        "total_training": total_training,
+        "total_exams": total_exams,
+    }
+
+
+async def get_training_difficulty_by_topic(db: aiosqlite.Connection) -> list[dict]:
+    async with db.execute("""
+        SELECT q.topic,
+               COUNT(*) as total,
+               SUM(ta.is_correct) as correct,
+               ROUND(100.0 * SUM(ta.is_correct) / COUNT(*), 1) as pct
+        FROM training_answers ta
+        JOIN questions q ON q.id = ta.question_id
+        GROUP BY q.topic
+        HAVING COUNT(*) >= 5
+        ORDER BY pct ASC
+    """) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_exam_stats_by_topic(db: aiosqlite.Connection) -> list[dict]:
+    async with db.execute("""
+        SELECT topic,
+               COUNT(*) as sessions,
+               ROUND(AVG(100.0 * correct_count / total_questions), 1) as avg_pct,
+               MIN(ROUND(100.0 * correct_count / total_questions, 1)) as min_pct,
+               MAX(ROUND(100.0 * correct_count / total_questions, 1)) as max_pct
+        FROM exam_sessions
+        WHERE status = 'completed' AND total_questions > 0
+        GROUP BY topic
+        ORDER BY avg_pct ASC
+    """) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_hardest_questions(db: aiosqlite.Connection, limit: int = 8) -> list[dict]:
+    async with db.execute("""
+        SELECT q.id, q.question, q.topic, q.subtopic,
+               COUNT(*) as total,
+               SUM(ta.is_correct) as correct,
+               ROUND(100.0 * SUM(ta.is_correct) / COUNT(*), 1) as pct
+        FROM training_answers ta
+        JOIN questions q ON q.id = ta.question_id
+        GROUP BY ta.question_id
+        HAVING COUNT(*) >= 3
+        ORDER BY pct ASC, total DESC
+        LIMIT ?
+    """, (limit,)) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
 async def get_all_users(db: aiosqlite.Connection) -> list[aiosqlite.Row]:
     async with db.execute("SELECT telegram_id FROM users") as cur:
         return await cur.fetchall()
