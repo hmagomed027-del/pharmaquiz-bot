@@ -34,6 +34,10 @@ async def run_bot() -> None:
         token=config.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2),
     )
+
+    # Сбрасываем вебхук и закрываем старые polling-сессии перед стартом
+    await bot.delete_webhook(drop_pending_updates=True)
+
     dp = Dispatcher(storage=MemoryStorage())
     dp.message.middleware(ThrottlingMiddleware(rate=config.throttle_rate))
 
@@ -50,7 +54,7 @@ async def run_bot() -> None:
     asyncio.create_task(reminder_scheduler(bot))
 
     try:
-        await dp.start_polling(bot)
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         await close_session()
         await close_db()

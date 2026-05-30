@@ -8,7 +8,10 @@ from aiogram.fsm.context import FSMContext
 from bot.config import config
 from bot.database.db import get_db
 from bot.database import queries
-from bot.handlers.admin import is_admin
+
+
+def _is_admin(user_id: int) -> bool:
+    return user_id in config.admin_ids
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -31,7 +34,7 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
         text="🔔 Напоминания",
         callback_data="open_reminder",
     )])
-    if is_admin(u.id):
+    if _is_admin(u.id):
         rows.append([InlineKeyboardButton(
             text="👑 Статистика студентов",
             callback_data="admin_stats",
