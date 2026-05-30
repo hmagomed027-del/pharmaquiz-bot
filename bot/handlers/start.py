@@ -53,7 +53,7 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
             "Приложение ФармаКвиз ещё настраивается — скоро будет доступно.\n"
             "Напоминания уже работают 🔔"
         )
-    await message.answer(text, reply_markup=kb)
+    await message.answer(text, reply_markup=kb, parse_mode=None)
 
 
 @router.message(Command("help"))
@@ -64,5 +64,6 @@ async def cmd_help(message: Message) -> None:
         "📝 Экзамен — с таймером и разбором ошибок\n"
         "📊 Статистика — твой прогресс\n"
         "🔔 /reminder — ежедневное напоминание\n\n"
-        "Используй кнопку /start чтобы открыть приложение."
+        "Используй кнопку /start чтобы открыть приложение.",
+        parse_mode=None,
     )
