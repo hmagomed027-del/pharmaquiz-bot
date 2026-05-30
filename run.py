@@ -53,7 +53,11 @@ async def setup_webhook() -> None:
     await asyncio.sleep(3)  # дождаться запуска uvicorn
     webhook_url = f"{config.webapp_url}/webhook"
     await bot.delete_webhook(drop_pending_updates=True)
-    await bot.set_webhook(webhook_url, drop_pending_updates=True)
+    await bot.set_webhook(
+        webhook_url,
+        drop_pending_updates=True,
+        allowed_updates=["message", "callback_query"],
+    )
     logger.info("Webhook set: %s", webhook_url)
     asyncio.create_task(reminder_scheduler(bot))
 

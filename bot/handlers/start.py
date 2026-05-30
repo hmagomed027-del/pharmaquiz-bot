@@ -31,27 +31,30 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
             web_app=WebAppInfo(url=config.webapp_url),
         )])
     rows.append([InlineKeyboardButton(
-        text="🔔 Напоминания",
+        text="🔔 Напоминания о занятиях",
         callback_data="open_reminder",
     )])
     if _is_admin(u.id):
         rows.append([InlineKeyboardButton(
-            text="👑 Статистика студентов",
+            text="📊 Статистика студентов",
             callback_data="admin_stats",
         )])
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
 
+    name = u.first_name or "Студент"
     if config.webapp_url:
         text = (
-            f"👋 Привет, {u.first_name or 'Студент'}!\n\n"
-            "Я помогу тебе подготовиться к экзаменам по фармакологии.\n"
-            "Нажми кнопку ниже, чтобы открыть приложение:"
+            f"👋 Привет, {name}!\n\n"
+            "💊 ФармаКвиз — твой тренажёр по фармакологии.\n\n"
+            "Здесь ты можешь тренироваться по темам, сдавать экзамены "
+            "и получать разбор ошибок с объяснениями."
         )
     else:
         text = (
-            f"👋 Привет, {u.first_name or 'Студент'}!\n\n"
-            "Приложение ФармаКвиз ещё настраивается — скоро будет доступно.\n"
-            "Напоминания уже работают 🔔"
+            f"👋 Привет, {name}!\n\n"
+            "💊 ФармаКвиз — тренажёр по фармакологии.\n\n"
+            "Приложение скоро будет доступно. "
+            "Уже сейчас можно настроить напоминания о занятиях."
         )
     await message.answer(text, reply_markup=kb, parse_mode=None)
 
