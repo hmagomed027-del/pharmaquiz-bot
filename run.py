@@ -49,29 +49,21 @@ async def telegram_webhook(request: Request):
     return {"ok": True}
 
 
+async def setup_webhook() -> None:
+    await asyncio.sleep(3)  # дождаться запуска uvicorn
+    webhook_url = f"{config.webapp_url}/webhook"
+    await bot.delete_webhook(drop_pending_updates=True)
+    await bot.set_webhook(webhook_url, drop_pending_updates=True)
+    logger.info("Webhook set: %s", webhook_url)
+    asyncio.create_task(reminder_scheduler(bot))
+
+
 async def main() -> None:
     port = int(os.getenv("PORT", "8000"))
     server = uvicorn.Server(
         uvicorn.Config(fastapi_app, host="0.0.0.0", port=port, log_level="info")
     )
-
-    await server.startup()
-    logger.info("FastAPI running on port %d", port)
-
-    webhook_url = f"{config.webapp_url}/webhook"
-    await bot.delete_webhook(drop_pending_updates=True)
-    await bot.set_webhook(webhook_url, drop_pending_updates=True)
-    logger.info("Webhook set: %s", webhook_url)
-
-    asyncio.create_task(reminder_scheduler(bot))
-
-    try:
-        await server.main_loop()
-    finally:
-        await server.shutdown()
-        await bot.delete_webhook()
-        await bot.session.close()
-        logger.info("Shutdown complete")
+    await asyncio.gather(server.serve(), setup_webhook())
 
 
 if __name__ == "__main__":
