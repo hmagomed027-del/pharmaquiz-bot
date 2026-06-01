@@ -1,10 +1,17 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+
+
+def _app_button() -> KeyboardButton:
+    from bot.config import config
+    if config.webapp_url:
+        return KeyboardButton(text="🎓 ФармаКвиз", web_app=WebAppInfo(url=config.webapp_url))
+    return KeyboardButton(text="🎓 ФармаКвиз")
 
 
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📚 Тренировка"), KeyboardButton(text="📝 Экзамен")],
+            [_app_button()],
             [KeyboardButton(text="📊 Статистика"), KeyboardButton(text="🔔 Напоминания")],
             [KeyboardButton(text="ℹ️ Помощь")],
         ],
@@ -16,7 +23,7 @@ def main_menu_keyboard() -> ReplyKeyboardMarkup:
 def admin_menu_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📚 Тренировка"), KeyboardButton(text="📝 Экзамен")],
+            [_app_button()],
             [KeyboardButton(text="📊 Статистика"), KeyboardButton(text="🔔 Напоминания")],
             [KeyboardButton(text="ℹ️ Помощь"), KeyboardButton(text="👑 Аналитика")],
         ],

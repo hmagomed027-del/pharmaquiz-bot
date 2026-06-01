@@ -2,7 +2,7 @@ import logging
 
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from bot.config import config
@@ -31,22 +31,11 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await message.answer(
         f"👋 Привет, {name}!\n\n"
         "💊 ФармаКвиз — твой тренажёр по фармакологии.\n"
-        "Тренируйся по темам, сдавай экзамены и следи за прогрессом.",
+        "Тренируйся по темам, сдавай экзамены и следи за прогрессом.\n\n"
+        "Используй кнопки меню ниже 👇",
         reply_markup=reply_kb,
         parse_mode=None,
     )
-
-    if config.webapp_url:
-        await message.answer(
-            "Нажми чтобы открыть приложение:",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="🎓 Открыть приложение",
-                    web_app=WebAppInfo(url=config.webapp_url),
-                )
-            ]]),
-            parse_mode=None,
-        )
 
 
 @router.message(Command("help"))
