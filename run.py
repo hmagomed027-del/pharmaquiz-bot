@@ -12,7 +12,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import Update
+from aiogram.types import (
+    Update, BotCommand, BotCommandScopeDefault, BotCommandScopeChat,
+)
 from fastapi import Request
 
 from bot.config import config
@@ -59,6 +61,32 @@ async def setup_webhook() -> None:
         allowed_updates=["message", "callback_query"],
     )
     logger.info("Webhook set: %s", webhook_url)
+
+    # Команды для обычных пользователей
+    user_commands = [
+        BotCommand(command="start",    description="🎓 Открыть ФармаКвиз"),
+        BotCommand(command="reminder", description="🔔 Напоминания о занятиях"),
+        BotCommand(command="help",     description="💊 Помощь"),
+    ]
+    await bot.set_my_commands(user_commands, scope=BotCommandScopeDefault())
+
+    # Расширенные команды для владельца
+    admin_commands = user_commands + [
+        BotCommand(command="adminstats", description="📊 Статистика студентов"),
+        BotCommand(command="reload",     description="🔄 Перезагрузить вопросы"),
+        BotCommand(command="dbstats",    description="🗄 Статистика базы"),
+        BotCommand(command="broadcast",  description="📢 Рассылка"),
+    ]
+    for admin_id in config.admin_ids:
+        try:
+            await bot.set_my_commands(
+                admin_commands,
+                scope=BotCommandScopeChat(chat_id=admin_id),
+            )
+        except Exception as e:
+            logger.warning("Could not set admin commands for %d: %s", admin_id, e)
+
+    logger.info("Bot commands set")
     asyncio.create_task(reminder_scheduler(bot))
 
 
