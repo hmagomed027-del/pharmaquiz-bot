@@ -23,9 +23,8 @@ async def show_stats(message: Message, state: FSMContext) -> None:
 
     if stats["total"] == 0:
         await message.answer(
-            "📊 *Статистика пока пуста*\n\n"
-            "Начните тренировку, чтобы увидеть свой прогресс\\!",
-            parse_mode="MarkdownV2",
+            "📊 Статистика пока пуста\n\nНачни тренировку, чтобы увидеть свой прогресс!",
+            parse_mode=None,
             reply_markup=get_menu_keyboard(user.id),
         )
         return
