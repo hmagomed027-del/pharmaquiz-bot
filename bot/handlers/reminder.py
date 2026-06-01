@@ -50,6 +50,7 @@ async def cb_open_reminder(call: CallbackQuery) -> None:
 
 
 @router.message(Command("reminder"))
+@router.message(F.text == "🔔 Напоминания")
 async def cmd_reminder(message: Message) -> None:
     await _show_reminder_menu(message.from_user.id, message.answer)
 

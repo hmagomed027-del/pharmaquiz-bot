@@ -13,7 +13,7 @@ from bot.keyboards.inline import (
     topic_keyboard, exam_count_keyboard, exam_time_keyboard,
     exam_question_keyboard, after_exam_keyboard, main_menu_inline,
 )
-from bot.keyboards.reply import main_menu_keyboard
+from bot.keyboards.reply import get_menu_keyboard
 from bot.services import claude_service, wikipedia_service
 from bot.states.states import ExamStates
 from bot.utils.formatters import escape_md, format_question, format_exam_result, format_explanation

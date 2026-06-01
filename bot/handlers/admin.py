@@ -134,6 +134,7 @@ async def _adminstats_body(message: Message) -> None:
 
 
 @router.message(Command("adminstats"))
+@router.message(F.text == "👑 Аналитика")
 async def cmd_adminstats(message: Message) -> None:
     if not await _require_admin(message):
         return

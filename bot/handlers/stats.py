@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 
 from bot.database.db import get_db
 from bot.database import queries
-from bot.keyboards.reply import main_menu_keyboard
+from bot.keyboards.reply import get_menu_keyboard
 from bot.utils.formatters import format_stats
 
 router = Router()
@@ -26,9 +26,9 @@ async def show_stats(message: Message, state: FSMContext) -> None:
             "📊 *Статистика пока пуста*\n\n"
             "Начните тренировку, чтобы увидеть свой прогресс\\!",
             parse_mode="MarkdownV2",
-            reply_markup=main_menu_keyboard(),
+            reply_markup=get_menu_keyboard(user.id),
         )
         return
 
     text = format_stats(stats, user.first_name or "Студент")
-    await message.answer(text, parse_mode="MarkdownV2", reply_markup=main_menu_keyboard())
+    await message.answer(text, parse_mode="MarkdownV2", reply_markup=get_menu_keyboard(user.id))

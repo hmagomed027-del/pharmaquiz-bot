@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from bot.database.db import get_db
 from bot.database import queries
 from bot.keyboards.inline import topic_keyboard, answer_keyboard, after_training_keyboard
-from bot.keyboards.reply import main_menu_keyboard
+from bot.keyboards.reply import get_menu_keyboard
 from bot.services import claude_service, wikipedia_service
 from bot.states.states import TrainingStates
 from bot.utils.formatters import escape_md, format_question, format_explanation, format_today_progress
