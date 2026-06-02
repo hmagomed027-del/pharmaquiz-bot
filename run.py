@@ -88,6 +88,22 @@ async def setup_webhook() -> None:
 
     logger.info("Bot commands set")
     asyncio.create_task(reminder_scheduler(bot))
+    asyncio.create_task(_keep_alive())
+
+
+async def _keep_alive() -> None:
+    """Ping /health every 10 min so Render free tier never spins down."""
+    import aiohttp
+    url = f"{config.webapp_url}/health"
+    await asyncio.sleep(60)  # дать серверу полностью запуститься
+    while True:
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.get(url, timeout=aiohttp.ClientTimeout(total=10)):
+                    pass
+        except Exception:
+            pass
+        await asyncio.sleep(600)  # 10 минут
 
 
 async def main() -> None:

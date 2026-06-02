@@ -63,6 +63,11 @@ async def serve_css():
     return Response(content, media_type="text/css; charset=utf-8")
 
 
+@app.get("/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
+
+
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse(str(WEBAPP_DIR / "index.html"), media_type="text/html")
