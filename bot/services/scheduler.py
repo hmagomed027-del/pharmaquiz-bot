@@ -59,7 +59,7 @@ async def _send_reminders(bot: Bot) -> None:
 
     for user in users:
         try:
-            await bot.send_message(user["telegram_id"], text)
+            await bot.send_message(user["telegram_id"], text, parse_mode=None)
             sent += 1
         except TelegramForbiddenError:
             blocked += 1  # пользователь заблокировал бота

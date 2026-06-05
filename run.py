@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(
     token=config.bot_token,
-    default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2),
+    default=DefaultBotProperties(parse_mode=None),
 )
 dp = Dispatcher(storage=MemoryStorage())
 dp.message.middleware(ThrottlingMiddleware(rate=config.throttle_rate))

@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name      TEXT,
     last_name       TEXT,
     is_admin        INTEGER NOT NULL DEFAULT 0,
+    reminder_time   TEXT,
     registered_at   TEXT NOT NULL DEFAULT (datetime('now')),
     last_active_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );

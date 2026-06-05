@@ -166,7 +166,7 @@ async def cmd_broadcast_send(message: Message, state: FSMContext) -> None:
     sent = 0
     for u in users:
         try:
-            await message.bot.send_message(u["telegram_id"], message.text)
+            await message.bot.send_message(u["telegram_id"], message.text, parse_mode=None)
             sent += 1
         except Exception:
             pass
