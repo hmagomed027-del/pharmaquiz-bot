@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS questions (
     drug_name       TEXT,
     difficulty      INTEGER NOT NULL DEFAULT 1 CHECK(difficulty IN (1,2,3)),
     tags            TEXT,
+    explanation     TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -87,7 +88,7 @@ async def init_db(path: str) -> None:
     await _db.executescript(SCHEMA)
     await _db.commit()
     # migrations for existing databases
-    for col, definition in [("reminder_time", "TEXT")]:
+    for col, definition in [("reminder_time", "TEXT"), ("explanation", "TEXT")]:
         try:
             await _db.execute(f"ALTER TABLE users ADD COLUMN {col} {definition}")
             await _db.commit()

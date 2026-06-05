@@ -90,8 +90,24 @@ def _fallback(question) -> str:
             "C": question["option_c"], "D": question["option_d"]}
     correct_letters = [l.strip() for l in question["correct_answer"].split(",")]
     correct_str = ", ".join(f"{l}) {opts[l]}" for l in correct_letters if l in opts)
-    return (
-        f"✅ ПРАВИЛЬНЫЙ ОТВЕТ: {correct_str}\n\n"
-        "Подробное объяснение временно недоступно.\n\n"
-        "💡 ЗАПОМНИ: Повторите этот раздел по учебнику для закрепления."
-    )
+
+    # Use built-in explanation if the question has one stored in the DB
+    try:
+        builtin = question["explanation"]
+    except (KeyError, IndexError):
+        builtin = None
+    if builtin:
+        return f"✅ ПРАВИЛЬНЫЙ ОТВЕТ: {correct_str}\n\n{builtin}"
+
+    # Construct a useful message from the question data itself
+    wrong = [(l, opts[l]) for l in ("A", "B", "C", "D") if l not in correct_letters]
+    lines = [
+        f"✅ ПРАВИЛЬНЫЙ ОТВЕТ:",
+        f"{correct_str}",
+        "",
+        "❌ Неверные варианты:",
+    ]
+    for l, text in wrong:
+        lines.append(f"{l}) {text}")
+    lines += ["", "💡 ЗАПОМНИ: Повторите эту тему по учебнику — ИИ-объяснение временно недоступно."]
+    return "\n".join(lines)

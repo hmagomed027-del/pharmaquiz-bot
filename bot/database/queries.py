@@ -192,12 +192,15 @@ async def insert_question(db: aiosqlite.Connection, q: dict) -> None:
     tags = json.dumps(q.get("tags", []), ensure_ascii=False)
     await db.execute("""
         INSERT INTO questions (id, topic, subtopic, question, option_a, option_b, option_c, option_d,
-                               correct_answer, drug_name, difficulty, tags)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               correct_answer, drug_name, difficulty, tags, explanation)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            explanation = COALESCE(excluded.explanation, questions.explanation)
     """, (
         q["id"], q["topic"], q.get("subtopic"), q["question"],
         q["options"]["A"], q["options"]["B"], q["options"]["C"], q["options"]["D"],
-        q["correct_answer"], q.get("drug_name"), q.get("difficulty", 1), tags
+        q["correct_answer"], q.get("drug_name"), q.get("difficulty", 1), tags,
+        q.get("explanation"),
     ))
 
 

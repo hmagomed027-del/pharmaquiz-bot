@@ -51,21 +51,31 @@ async def load_questions_from_file(db: aiosqlite.Connection, filepath: str) -> i
         return 0
 
     inserted = 0
+    explanations_to_cache = []
     for q in data:
         if not _validate(q, filepath):
             continue
-        if await queries.question_exists(db, q["id"]):
-            continue
+        is_new = not await queries.question_exists(db, q["id"])
         try:
             q_normalized = dict(q)
             q_normalized["correct_answer"] = _normalize_correct_answer(q)
             await queries.insert_question(db, q_normalized)
-            inserted += 1
+            if is_new:
+                inserted += 1
+            # If question has a built-in explanation, cache it so Gemini is never called
+            if q.get("explanation"):
+                explanations_to_cache.append((q["id"], q["explanation"]))
         except Exception as e:
             logger.error("Failed to insert question %s: %s", q.get("id"), e)
 
-    if inserted:
+    if inserted or explanations_to_cache:
         await db.commit()
+
+    for qid, explanation in explanations_to_cache:
+        cached = await queries.get_cached_explanation(db, qid)
+        if not cached:
+            await queries.cache_explanation(db, qid, explanation)
+
     return inserted
 
 
