@@ -302,7 +302,11 @@ async def review_errors(callback: CallbackQuery, state: FSMContext) -> None:
         result_text = format_explanation(
             explanation, False, a["chosen_answer"] or "—", q["correct_answer"]
         )
-        await callback.message.answer(result_text, parse_mode="MarkdownV2")
+        try:
+            await callback.message.answer(result_text, parse_mode="HTML")
+        except Exception as e:
+            logger.error("Failed to send exam explanation for question %s: %s", q["id"], e)
+            await callback.message.answer("⚠️ Объяснение временно недоступно.")
 
         if q.get("drug_name"):
             image_bytes = await wikipedia_service.get_drug_image(q["drug_name"])

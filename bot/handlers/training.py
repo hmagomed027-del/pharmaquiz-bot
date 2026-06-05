@@ -122,11 +122,18 @@ async def process_answer(callback: CallbackQuery, state: FSMContext) -> None:
     explanation = await claude_service.get_explanation(question)
     result_text = format_explanation(explanation, is_correct, chosen, question["correct_answer"])
 
-    await callback.message.answer(
-        result_text,
-        parse_mode="MarkdownV2",
-        reply_markup=after_training_keyboard(),
-    )
+    try:
+        await callback.message.answer(
+            result_text,
+            parse_mode="HTML",
+            reply_markup=after_training_keyboard(),
+        )
+    except Exception as e:
+        logger.error("Failed to send explanation for question %s: %s", question_id, e)
+        await callback.message.answer(
+            "⚠️ Не удалось отправить объяснение. Попробуйте следующий вопрос.",
+            reply_markup=after_training_keyboard(),
+        )
 
     drug_name = question.get("drug_name")
     if drug_name:

@@ -1,3 +1,4 @@
+import html as html_module
 import re
 import time
 from typing import Optional
@@ -49,10 +50,10 @@ def format_question(question, index: int, total: int,
 
 def format_explanation(explanation: str, is_correct: bool, chosen: str, correct: str) -> str:
     if is_correct:
-        header = "✅ *Верно\\!*"
+        header = "✅ <b>Верно!</b>"
     else:
-        header = f"❌ *Неверно* — правильный ответ: *{escape_md(correct)}*"
-    return f"{header}\n\n{escape_md(explanation)}"
+        header = f"❌ <b>Неверно</b> — правильный ответ: <b>{html_module.escape(correct)}</b>"
+    return f"{header}\n\n{html_module.escape(explanation)}"
 
 
 def format_stats(stats: dict, first_name: str) -> str:
