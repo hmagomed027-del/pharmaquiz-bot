@@ -88,11 +88,14 @@ async def init_db(path: str) -> None:
     await _db.executescript(SCHEMA)
     await _db.commit()
     # migrations for existing databases
-    for col, definition in [("reminder_time", "TEXT"), ("explanation", "TEXT")]:
+    for table, col, definition in [
+        ("users",     "reminder_time", "TEXT"),
+        ("questions", "explanation",   "TEXT"),
+    ]:
         try:
-            await _db.execute(f"ALTER TABLE users ADD COLUMN {col} {definition}")
+            await _db.execute(f"ALTER TABLE {table} ADD COLUMN {col} {definition}")
             await _db.commit()
-            logger.info("Migration: added column users.%s", col)
+            logger.info("Migration: added column %s.%s", table, col)
         except Exception:
             pass  # column already exists
     logger.info("Database initialised at %s", path)

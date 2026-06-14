@@ -310,36 +310,24 @@ async def set_reminder_time(db: aiosqlite.Connection, telegram_id: int, time_str
 
 
 async def get_users_for_reminder(db: aiosqlite.Connection, time_str: str) -> list[aiosqlite.Row]:
-    """Возвращает пользователей у которых reminder_time совпадает и нет активности 23+ часов.
+    """Возвращает пользователей у которых reminder_time совпадает и нет занятий СЕГОДНЯ.
 
-    Активность = последний ответ в тренировке ИЛИ последний завершённый экзамен.
-    Если хоть одно из них было < 23ч назад — напоминание не отправляем.
+    Занятие = ответ в тренировке ИЛИ завершённый экзамен с начала текущего дня (UTC).
+    Если сегодня уже занимался — напоминание не отправляем.
+    Нет активности вообще — отправляем.
     """
     async with db.execute("""
         SELECT u.telegram_id, u.first_name
         FROM users u
         WHERE u.reminder_time = ?
           AND (
-            (
-              SELECT MAX(ts)
-              FROM (
-                SELECT MAX(answered_at) AS ts FROM training_answers WHERE user_id = u.telegram_id
-                UNION ALL
-                SELECT MAX(finished_at) AS ts FROM exam_sessions
-                  WHERE user_id = u.telegram_id AND finished_at IS NOT NULL
-              )
-            ) IS NULL
-            OR (
-              julianday('now') - julianday((
-                SELECT MAX(ts)
-                FROM (
-                  SELECT MAX(answered_at) AS ts FROM training_answers WHERE user_id = u.telegram_id
-                  UNION ALL
-                  SELECT MAX(finished_at) AS ts FROM exam_sessions
-                    WHERE user_id = u.telegram_id AND finished_at IS NOT NULL
-                )
-              ))
-            ) * 24 >= 23
+            (SELECT COUNT(*) FROM training_answers
+             WHERE user_id = u.telegram_id AND date(answered_at) = date('now')) = 0
+            AND
+            (SELECT COUNT(*) FROM exam_sessions
+             WHERE user_id = u.telegram_id
+               AND status = 'completed'
+               AND date(finished_at) = date('now')) = 0
           )
     """, (time_str,)) as cur:
         return await cur.fetchall()
