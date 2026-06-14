@@ -3,6 +3,7 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
+from bot.config import config
 from bot.database.db import get_db
 from bot.database import queries
 
@@ -37,7 +38,7 @@ async def _show_reminder_menu(user_id: int, answer_fn) -> None:
     await answer_fn(
         f"🔔 <b>Напоминания о занятиях</b>\n\n"
         f"{status}\n\n"
-        "Выбери время — бот напомнит, если ты не занимался больше дня.",
+        "Выбери время — бот будет напоминать каждый день в это время.",
         reply_markup=_reminder_keyboard(current),
         parse_mode="HTML",
     )
@@ -63,7 +64,7 @@ async def cb_reminder_set(call: CallbackQuery) -> None:
     await queries.set_reminder_time(db, call.from_user.id, time_str)
     await call.message.edit_text(
         f"✅ Напоминание установлено на <b>{time_str}</b> (МСК).\n\n"
-        "Если не будешь заниматься весь день — пришлю напоминание в это время.",
+        "Каждый день в это время буду напоминать о занятиях.",
         reply_markup=_reminder_keyboard(time_str),
         parse_mode="HTML",
     )
@@ -77,5 +78,24 @@ async def cb_reminder_off(call: CallbackQuery) -> None:
     await call.message.edit_text(
         "🔕 Напоминания отключены.",
         reply_markup=_reminder_keyboard(None),
+        parse_mode="HTML",
+    )
+
+
+@router.message(Command("testreminder"))
+async def cmd_test_reminder(message: Message) -> None:
+    if message.from_user.id not in config.admin_ids:
+        return
+    db = await get_db()
+    user = await queries.get_user(db, message.from_user.id)
+    current = user["reminder_time"] if user else None
+    text = (
+        "📚 Привет! Ты давно не занимался фармакологией. "
+        "Самое время освежить знания!"
+    )
+    await message.answer(
+        f"🔔 <b>Тест напоминания</b>\n"
+        f"Твоё время: <b>{current or 'не установлено'}</b>\n\n"
+        f"Вот так выглядит напоминание:\n\n{text}",
         parse_mode="HTML",
     )
