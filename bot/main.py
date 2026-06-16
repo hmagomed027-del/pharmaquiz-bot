@@ -36,7 +36,7 @@ async def main() -> None:
 
     # Инициализируем базу данных
     logger.info("Initialising database...")
-    await init_db(config.database_path)
+    await init_db(config.database_url)
 
     # Загружаем вопросы из JSON-файлов
     db = await get_db()

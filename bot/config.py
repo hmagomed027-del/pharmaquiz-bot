@@ -11,7 +11,7 @@ class Settings:
     bot_token: str
     gemini_api_key: str
     admin_ids: list[int]
-    database_path: str
+    database_url: str
     images_dir: str
     gemini_model: str
     max_exam_questions: int
@@ -44,11 +44,14 @@ def load_settings() -> Settings:
     token = os.getenv("BOT_TOKEN")
     if not token:
         raise ValueError("BOT_TOKEN is not set in environment")
+    db_url = os.getenv("DATABASE_URL", "")
+    if not db_url:
+        raise ValueError("DATABASE_URL is not set in environment")
     return Settings(
         bot_token=token,
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         admin_ids=_parse_admin_ids(os.getenv("ADMIN_IDS")),
-        database_path=os.getenv("DATABASE_PATH", "bot.db"),
+        database_url=db_url,
         images_dir=os.getenv("IMAGES_DIR", "data/images"),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
         max_exam_questions=int(os.getenv("MAX_EXAM_QUESTIONS", "30")),

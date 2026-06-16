@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
     project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     os.chdir(project_dir)
     os.makedirs(config.images_dir, exist_ok=True)
-    await init_db(config.database_path)
+    await init_db(config.database_url)
     db = await get_db()
     count = await load_all_questions(db)
     logger.info("Questions loaded: %d new", count)

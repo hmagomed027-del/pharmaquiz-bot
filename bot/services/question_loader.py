@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import glob
-import aiosqlite
+import asyncpg
 from bot.database import queries
 
 logger = logging.getLogger(__name__)
@@ -30,15 +30,17 @@ def _validate(q: dict, filepath: str) -> bool:
         logger.warning("Question in %s missing fields: %s — skipping", filepath, missing)
         return False
     if not isinstance(q.get("options"), dict) or set(q["options"].keys()) != REQUIRED_OPTIONS:
-        logger.warning("Question %s in %s: options must have keys A,B,C,D — skipping", q.get("id"), filepath)
+        logger.warning("Question %s in %s: options must have keys A,B,C,D — skipping",
+                       q.get("id"), filepath)
         return False
     if _normalize_correct_answer(q) is None:
-        logger.warning("Question %s in %s: invalid correct_answer/correct_answers — skipping", q.get("id"), filepath)
+        logger.warning("Question %s in %s: invalid correct_answer/correct_answers — skipping",
+                       q.get("id"), filepath)
         return False
     return True
 
 
-async def load_questions_from_file(db: aiosqlite.Connection, filepath: str) -> int:
+async def load_questions_from_file(pool: asyncpg.Pool, filepath: str) -> int:
     try:
         with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
@@ -55,31 +57,27 @@ async def load_questions_from_file(db: aiosqlite.Connection, filepath: str) -> i
     for q in data:
         if not _validate(q, filepath):
             continue
-        is_new = not await queries.question_exists(db, q["id"])
+        is_new = not await queries.question_exists(pool, q["id"])
         try:
             q_normalized = dict(q)
             q_normalized["correct_answer"] = _normalize_correct_answer(q)
-            await queries.insert_question(db, q_normalized)
+            await queries.insert_question(pool, q_normalized)
             if is_new:
                 inserted += 1
-            # If question has a built-in explanation, cache it so Gemini is never called
             if q.get("explanation"):
                 explanations_to_cache.append((q["id"], q["explanation"]))
         except Exception as e:
             logger.error("Failed to insert question %s: %s", q.get("id"), e)
 
-    if inserted or explanations_to_cache:
-        await db.commit()
-
     for qid, explanation in explanations_to_cache:
-        cached = await queries.get_cached_explanation(db, qid)
+        cached = await queries.get_cached_explanation(pool, qid)
         if not cached:
-            await queries.cache_explanation(db, qid, explanation)
+            await queries.cache_explanation(pool, qid, explanation)
 
     return inserted
 
 
-async def load_all_questions(db: aiosqlite.Connection, questions_dir: str = "data/questions") -> int:
+async def load_all_questions(pool: asyncpg.Pool, questions_dir: str = "data/questions") -> int:
     pattern = os.path.join(questions_dir, "*.json")
     files = glob.glob(pattern)
     if not files:
@@ -88,7 +86,7 @@ async def load_all_questions(db: aiosqlite.Connection, questions_dir: str = "dat
 
     total = 0
     for fp in sorted(files):
-        count = await load_questions_from_file(db, fp)
+        count = await load_questions_from_file(pool, fp)
         logger.info("Loaded %d new questions from %s", count, fp)
         total += count
     logger.info("Total new questions loaded: %d", total)
