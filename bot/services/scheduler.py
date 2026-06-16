@@ -21,7 +21,9 @@ MESSAGES = [
 ]
 
 _msg_index = 0
-_last_sent_minute: str | None = None  # не слать дважды в одну минуту
+# Key format: "YYYY-MM-DD HH:MM" — includes date so the same time slot
+# is never blocked on the next day.
+_last_sent_key: str | None = None
 
 
 def _next_message() -> str:
@@ -32,23 +34,28 @@ def _next_message() -> str:
 
 
 async def _send_reminders(bot: Bot) -> None:
-    global _last_sent_minute
+    global _last_sent_key
 
     now_msk = datetime.now(MSK)
     time_str = now_msk.strftime("%H:%M")
+    current_key = now_msk.strftime("%Y-%m-%d %H:%M")
 
-    if time_str == _last_sent_minute:
-        return  # уже отправили в эту минуту
+    if current_key == _last_sent_key:
+        return  # уже отправили в эту минуту сегодня
 
     db = await get_db()
 
-    # Проверяем текущую минуту И предыдущую (подстраховка если планировщик чуть запоздал)
-    prev_time = (now_msk - timedelta(minutes=1)).strftime("%H:%M")
+    # Подстраховка: если планировщик чуть запоздал — проверяем предыдущую минуту
+    prev_msk = now_msk - timedelta(minutes=1)
+    prev_time = prev_msk.strftime("%H:%M")
+    prev_key = prev_msk.strftime("%Y-%m-%d %H:%M")
+
     users = await queries.get_users_for_reminder(db, time_str)
-    if not users and prev_time != _last_sent_minute:
+    if not users and prev_key != _last_sent_key:
         users = await queries.get_users_for_reminder(db, prev_time)
         if users:
-            time_str = prev_time  # чтобы пометить что уже отправили
+            current_key = prev_key
+            time_str = prev_time
 
     if not users:
         return
@@ -62,7 +69,7 @@ async def _send_reminders(bot: Bot) -> None:
             await bot.send_message(user["telegram_id"], text, parse_mode=None)
             sent += 1
         except TelegramForbiddenError:
-            blocked += 1  # пользователь заблокировал бота
+            blocked += 1
         except TelegramBadRequest as e:
             failed += 1
             logger.error("TelegramBadRequest for user %s: %s | text=%r", user["telegram_id"], e, text)
@@ -71,7 +78,7 @@ async def _send_reminders(bot: Bot) -> None:
             logger.warning("Failed to send reminder to %s: %s", user["telegram_id"], e)
 
     logger.info("Reminders done: sent=%d blocked=%d failed=%d", sent, blocked, failed)
-    _last_sent_minute = time_str
+    _last_sent_key = current_key
 
 
 async def reminder_scheduler(bot: Bot) -> None:
