@@ -291,10 +291,13 @@ async def get_all_users(pool: asyncpg.Pool) -> list[asyncpg.Record]:
 
 async def set_reminder_time(pool: asyncpg.Pool, telegram_id: int,
                             time_str: Optional[str]) -> None:
-    await pool.execute(
-        "UPDATE users SET reminder_time = $1 WHERE telegram_id = $2",
-        time_str, telegram_id,
-    )
+    # UPSERT: if the user row doesn't exist yet (e.g. after DB migration,
+    # before /start), INSERT it so the reminder_time is never silently lost.
+    await pool.execute("""
+        INSERT INTO users (telegram_id, reminder_time)
+        VALUES ($1, $2)
+        ON CONFLICT (telegram_id) DO UPDATE SET reminder_time = $2
+    """, telegram_id, time_str)
 
 
 async def get_users_for_reminder(pool: asyncpg.Pool, time_str: str) -> list[asyncpg.Record]:

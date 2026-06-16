@@ -2,6 +2,7 @@ import logging
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from datetime import datetime, timezone, timedelta
 
 from bot.config import config
 from bot.database.db import get_db
@@ -9,6 +10,8 @@ from bot.database import queries
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+MSK = timezone(timedelta(hours=3))
 
 TIMES = ["07:00", "08:00", "09:00", "10:00", "12:00", "14:00",
          "16:00", "18:00", "19:00", "20:00", "21:00", "22:00"]
@@ -60,8 +63,12 @@ async def cmd_reminder(message: Message) -> None:
 async def cb_reminder_set(call: CallbackQuery) -> None:
     await call.answer()
     time_str = call.data[len("reminder_set:"):]
+    u = call.from_user
     db = await get_db()
-    await queries.set_reminder_time(db, call.from_user.id, time_str)
+    # Ensure user row exists before setting reminder_time
+    await queries.upsert_user(db, u.id, u.username or "", u.first_name or "", u.last_name or "")
+    await queries.set_reminder_time(db, u.id, time_str)
+    logger.info("Reminder set: user=%s time=%s", u.id, time_str)
     await call.message.edit_text(
         f"✅ Напоминание установлено на <b>{time_str}</b> (МСК).\n\n"
         "Каждый день в это время буду напоминать о занятиях.",
@@ -86,16 +93,45 @@ async def cb_reminder_off(call: CallbackQuery) -> None:
 async def cmd_test_reminder(message: Message) -> None:
     if message.from_user.id not in config.admin_ids:
         return
+
     db = await get_db()
+    now_msk = datetime.now(MSK)
+    time_str = now_msk.strftime("%H:%M")
+
+    # Check this user's DB record
     user = await queries.get_user(db, message.from_user.id)
-    current = user["reminder_time"] if user else None
-    text = (
-        "📚 Привет! Ты давно не занимался фармакологией. "
-        "Самое время освежить знания!"
+    if user:
+        user_exists = "✅ есть в БД"
+        reminder_val = user["reminder_time"] or "не установлено"
+    else:
+        user_exists = "❌ НЕТ в БД — отправь /start"
+        reminder_val = "—"
+
+    # Count all users with any reminder set
+    all_reminder_users = await db.fetch(
+        "SELECT telegram_id, reminder_time FROM users WHERE reminder_time IS NOT NULL"
     )
+    users_count = len(all_reminder_users)
+    users_list = "\n".join(
+        f"  • {r['telegram_id']} → {r['reminder_time']}"
+        for r in all_reminder_users
+    ) or "  (никого)"
+
+    # Force-send a reminder to this user right now
+    test_text = "🔔 ТЕСТ: это проверочное напоминание от планировщика."
+    try:
+        await message.bot.send_message(message.from_user.id, test_text, parse_mode=None)
+        send_status = "✅ Тестовое сообщение отправлено выше"
+    except Exception as e:
+        send_status = f"❌ Ошибка отправки: {e}"
+
     await message.answer(
-        f"🔔 <b>Тест напоминания</b>\n"
-        f"Твоё время: <b>{current or 'не установлено'}</b>\n\n"
-        f"Вот так выглядит напоминание:\n\n{text}",
+        f"🔍 <b>Диагностика напоминаний</b>\n\n"
+        f"🕐 Время МСК: <b>{time_str}</b>\n"
+        f"👤 Твой аккаунт: {user_exists}\n"
+        f"⏰ Твоё время: <b>{reminder_val}</b>\n\n"
+        f"📋 Пользователей с напоминанием: <b>{users_count}</b>\n"
+        f"{users_list}\n\n"
+        f"{send_status}",
         parse_mode="HTML",
     )
