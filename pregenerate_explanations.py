@@ -44,7 +44,7 @@ SYSTEM_PROMPT = (
 
 # ── Gemini ──────────────────────────────────────────────────────────────────
 
-def call_gemini(prompt: str, retries: int = 6) -> str:
+def call_gemini(prompt: str, retries: int = 8) -> str:
     body = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": [{"parts": [{"text": prompt}]}],
@@ -54,14 +54,16 @@ def call_gemini(prompt: str, retries: int = 6) -> str:
         try:
             r = requests.post(GEMINI_URL, json=body, timeout=60)
             if r.status_code == 429:
-                wait = 90 * (attempt + 1)
+                # Short initial wait so RPM window resets, then grow slowly
+                wait = 15 * (2 ** attempt)   # 15, 30, 60, 120, 240, 480 ...
+                wait = min(wait, 300)          # cap at 5 min
                 print(f"  [429] rate limit — wait {wait}s", flush=True)
                 time.sleep(wait)
                 continue
             r.raise_for_status()
             return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
         except Exception as e:
-            wait = 15 * (attempt + 1)
+            wait = 10 * (attempt + 1)
             print(f"  [err {attempt+1}/{retries}] {e} — wait {wait}s", flush=True)
             time.sleep(wait)
     return ""
@@ -168,8 +170,8 @@ def main() -> None:
             # Save after every question — safe to interrupt
             save_file(f, data)
 
-            # Respect free-tier rate limit: ~15 RPM → 4s gap
-            time.sleep(4)
+            # Stay safely under 15 RPM: 6s gap ≈ 10 RPM
+            time.sleep(6)
 
         if changed:
             print(f"Сохранён {f.name}\n", flush=True)
