@@ -5,7 +5,6 @@ import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import config
@@ -55,7 +54,7 @@ async def main() -> None:
     # Создаём бота и диспетчер
     bot = Bot(
         token=config.bot_token,
-        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN_V2),
+        default=DefaultBotProperties(parse_mode=None),
     )
     dp = Dispatcher(storage=MemoryStorage())
 

@@ -116,7 +116,8 @@ def format_today_progress(stats: dict) -> str:
     if total == 0:
         return ""
     pct = round(correct / total * 100)
-    return f"📈 Сегодня: {total} ✅ | Правильно: {correct} \\({pct}%\\)"
+    # Plain text — escape_md() is applied by the caller before sending
+    return f"📈 Сегодня: {total} ✅ | Правильно: {correct} ({pct}%)"
 
 
 def _progress_bar(pct: int, length: int = 8) -> str:
