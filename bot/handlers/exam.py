@@ -299,8 +299,10 @@ async def review_errors(callback: CallbackQuery, state: FSMContext) -> None:
         if not q:
             continue
         explanation = await claude_service.get_explanation(q)
+        opts = {"A": q["option_a"], "B": q["option_b"],
+                "C": q["option_c"], "D": q["option_d"]}
         result_text = format_explanation(
-            explanation, False, a["chosen_answer"] or "—", q["correct_answer"]
+            explanation, False, a["chosen_answer"] or "—", q["correct_answer"], opts
         )
         try:
             await callback.message.answer(result_text, parse_mode="HTML")

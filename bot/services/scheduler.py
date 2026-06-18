@@ -22,7 +22,6 @@ MESSAGES = [
 
 _msg_index = 0
 _last_sent_key: str | None = None  # "YYYY-MM-DD HH:MM"
-_tick_count = 0                     # for periodic heartbeat logs
 
 
 def _next_message() -> str:
@@ -33,16 +32,11 @@ def _next_message() -> str:
 
 
 async def _send_reminders(bot: Bot) -> None:
-    global _last_sent_key, _tick_count
-    _tick_count += 1
+    global _last_sent_key
 
     now_msk = datetime.now(MSK)
     time_str = now_msk.strftime("%H:%M")
     current_key = now_msk.strftime("%Y-%m-%d %H:%M")
-
-    # Heartbeat every 10 ticks (~10 min) so Render logs confirm scheduler is alive
-    if _tick_count % 10 == 1:
-        logger.info("Reminder scheduler alive — MSK %s (tick %d)", time_str, _tick_count)
 
     if current_key == _last_sent_key:
         return
@@ -61,10 +55,13 @@ async def _send_reminders(bot: Bot) -> None:
             current_key = prev_key
             time_str = prev_time
 
+    # Log every minute so Render logs confirm scheduler is alive and show what it found
+    logger.info("Scheduler tick MSK=%s — matched %d user(s) for reminder", time_str, len(users))
+
     if not users:
+        _last_sent_key = current_key   # mark minute as processed even with 0 users
         return
 
-    logger.info("Sending reminders at %s MSK to %d user(s)", time_str, len(users))
     text = _next_message()
     sent = failed = blocked = 0
 
@@ -72,16 +69,16 @@ async def _send_reminders(bot: Bot) -> None:
         try:
             await bot.send_message(user["telegram_id"], text, parse_mode=None)
             sent += 1
-            logger.info("Reminder sent to user %s", user["telegram_id"])
+            logger.info("  → sent to uid=%s", user["telegram_id"])
         except TelegramForbiddenError:
             blocked += 1
-            logger.warning("User %s blocked the bot", user["telegram_id"])
+            logger.warning("  → uid=%s blocked the bot", user["telegram_id"])
         except TelegramBadRequest as e:
             failed += 1
-            logger.error("TelegramBadRequest uid=%s: %s", user["telegram_id"], e)
+            logger.error("  → TelegramBadRequest uid=%s: %s", user["telegram_id"], e)
         except Exception as e:
             failed += 1
-            logger.error("Failed reminder uid=%s: %s", user["telegram_id"], e)
+            logger.error("  → error uid=%s: %s", user["telegram_id"], e)
 
     logger.info("Reminders done — sent=%d blocked=%d failed=%d", sent, blocked, failed)
     _last_sent_key = current_key
@@ -89,6 +86,22 @@ async def _send_reminders(bot: Bot) -> None:
 
 async def reminder_scheduler(bot: Bot) -> None:
     logger.info("Reminder scheduler started")
+    # Log initial DB state so it's visible in Render logs on startup
+    try:
+        db = await get_db()
+        rows = await db.fetch(
+            "SELECT telegram_id, reminder_time FROM users WHERE reminder_time IS NOT NULL"
+        )
+        if rows:
+            logger.info("Users with reminder set (%d): %s",
+                        len(rows),
+                        [(r["telegram_id"], r["reminder_time"]) for r in rows])
+        else:
+            logger.warning("No users have reminder_time set — reminders will not fire. "
+                           "Users must set a reminder via /reminder after DB migration.")
+    except Exception as e:
+        logger.error("Startup reminder check failed: %s", e)
+
     while True:
         try:
             await _send_reminders(bot)

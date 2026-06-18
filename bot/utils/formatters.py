@@ -48,11 +48,19 @@ def format_question(question, index: int, total: int,
     return "\n".join(lines)
 
 
-def format_explanation(explanation: str, is_correct: bool, chosen: str, correct: str) -> str:
+def format_explanation(explanation: str, is_correct: bool, chosen: str, correct: str,
+                       options: dict | None = None) -> str:
     if is_correct:
         header = "✅ <b>Верно!</b>"
     else:
-        header = f"❌ <b>Неверно</b> — правильный ответ: <b>{html_module.escape(correct)}</b>"
+        if options:
+            correct_letters = [l.strip() for l in correct.split(",")]
+            parts = [f"{l}) {html_module.escape(str(options[l]))}"
+                     for l in correct_letters if l in options]
+            correct_display = ", ".join(parts) if parts else html_module.escape(correct)
+        else:
+            correct_display = html_module.escape(correct)
+        header = f"❌ <b>Неверно</b> — правильный ответ: <b>{correct_display}</b>"
     return f"{header}\n\n{html_module.escape(explanation)}"
 
 

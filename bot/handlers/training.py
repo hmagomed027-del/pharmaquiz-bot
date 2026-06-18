@@ -120,7 +120,9 @@ async def process_answer(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer("✅ Верно!" if is_correct else "❌ Неверно")
 
     explanation = await claude_service.get_explanation(question)
-    result_text = format_explanation(explanation, is_correct, chosen, question["correct_answer"])
+    opts = {"A": question["option_a"], "B": question["option_b"],
+            "C": question["option_c"], "D": question["option_d"]}
+    result_text = format_explanation(explanation, is_correct, chosen, question["correct_answer"], opts)
 
     try:
         await callback.message.answer(
