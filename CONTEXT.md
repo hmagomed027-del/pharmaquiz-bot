@@ -95,8 +95,8 @@ fix_biased_options.py         — исправление смещённых от
 
 | Файл | Вопросов | Объяснений |
 |------|---------|-----------|
-| analgesics.json | 50 | 40 ✅ |
-| anesthetics.json | 50 | 0 |
+| analgesics.json | 50 | 50 ✅ |
+| anesthetics.json | 50 | 18 🔄 |
 | anti_inflammatory.json | 50 | 0 |
 | antiallergic.json | 50 | 0 |
 | blood.json | 69 | 0 |
@@ -115,7 +115,7 @@ fix_biased_options.py         — исправление смещённых от
 | respiratory.json | 100 | 0 |
 | sss.json | 81 | 0 |
 | vitamins.json | 50 | 0 |
-| **ИТОГО** | **1399** | **40** |
+| **ИТОГО** | **1399** | **68** |
 
 ### data/classifications/ — 997 вопросов
 
@@ -220,6 +220,6 @@ python pregenerate_explanations.py
 
 ## Текущие задачи / незавершённое
 
-- [ ] Сгенерировать объяснения для оставшихся 1359 вопросов (запустить после 03:00 МСК)
+- [ ] Сгенерировать объяснения для оставшихся 1331 вопросов — запустить `python pregenerate_explanations.py` после 03:00 МСК (сброс суточного лимита). analgesics ✅, anesthetics 18/50 🔄, остальные 0.
 - [ ] Пользователь должен заново установить напоминание через `/reminder`
 - [ ] Добавить вопросы в классификации по оставшимся темам (expand_cls.py)
